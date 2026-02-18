@@ -1,8 +1,8 @@
 {
-  "totalFiles": 18,
-  "totalLines": 1803,
-  "avgComplexity": 22.2,
-  "deadExports": 3,
+  "totalFiles": 20,
+  "totalLines": 2566,
+  "avgComplexity": 21,
+  "deadExports": 4,
   "godFiles": 0,
   "criticalFiles": 1,
   "top10Complex": [
@@ -13,13 +13,13 @@
     },
     {
       "path": "src/index.ts",
-      "complexity": 77,
-      "lines": 324
+      "complexity": 84,
+      "lines": 378
     },
     {
       "path": "src/reporter/html.ts",
-      "complexity": 45,
-      "lines": 320
+      "complexity": 46,
+      "lines": 485
     },
     {
       "path": "src/analyzer/graph.ts",
@@ -43,8 +43,8 @@
     },
     {
       "path": "output.ts",
-      "complexity": 14,
-      "lines": 78
+      "complexity": 19,
+      "lines": 119
     },
     {
       "path": "src/commands/output.ts",
@@ -69,6 +69,10 @@
     {
       "file": "output.ts",
       "name": "printGodFiles"
+    },
+    {
+      "file": "output.ts",
+      "name": "printCriticalNodes"
     }
   ],
   "godFilesList": []
