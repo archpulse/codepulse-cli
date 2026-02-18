@@ -8,18 +8,15 @@ export function generateReport(result: AnalysisResult, baseDir: string): string 
   const reportPath = path.join(baseDir, REPORT_DIR);
   fs.mkdirSync(reportPath, { recursive: true });
 
-  // Generate stats.json
   const stats = buildStats(result);
   fs.writeFileSync(
     path.join(reportPath, 'stats.json'),
     JSON.stringify(stats, null, 2)
   );
 
-  // Generate graph.svg
   const svg = buildGraphSvg(result);
   fs.writeFileSync(path.join(reportPath, 'graph.svg'), svg);
 
-  // Generate index.html
   const html = buildHtml(result, stats);
   fs.writeFileSync(path.join(reportPath, 'index.html'), html);
 
@@ -51,11 +48,10 @@ function buildStats(result: AnalysisResult) {
 }
 
 function buildGraphSvg(result: AnalysisResult): string {
-  const nodes = result.files.slice(0, 80); // limit SVG nodes
+  const nodes = result.files.slice(0, 80);
   const width = 1200;
   const height = 800;
 
-  // Simple force-like layout: distribute in a circle
   const n = nodes.length;
   const cx = width / 2;
   const cy = height / 2;
@@ -115,13 +111,50 @@ function buildGraphSvg(result: AnalysisResult): string {
 </svg>`;
 }
 
+// ─── Tooltip definitions ──────────────────────────────────────
+
+const TOOLTIPS = {
+  'god-file': {
+    title: 'God File',
+    body: 'A file with 500+ lines or 15+ imports. Accumulates too many responsibilities — hard to maintain and refactor.',
+    fix: 'Split by responsibility, extract modules.',
+  },
+  'dead-export': {
+    title: 'Dead Export',
+    body: 'A symbol exported but never imported anywhere in the project. Likely unused or legacy code.',
+    fix: 'Remove the export or delete if unused.',
+  },
+  'critical-node': {
+    title: 'Critical Node',
+    body: 'Imported by many modules. Changes here may cause cascading failures across the codebase.',
+    fix: 'Avoid adding logic here. Add tests as safety net.',
+  },
+  'high-complexity': {
+    title: 'High Complexity',
+    body: 'Cyclomatic complexity > 10. Too many branches and decision points — hard to test and reason about.',
+    fix: 'Extract conditions into named functions, use early returns.',
+  },
+};
+
+function infoIcon(type: keyof typeof TOOLTIPS): string {
+  const t = TOOLTIPS[type];
+  return `<span class="info-icon" tabindex="0">
+    ℹ
+    <span class="tooltip">
+      <strong>${t.title}</strong><br>
+      ${t.body}<br>
+      <span class="tooltip-fix">✓ ${t.fix}</span>
+    </span>
+  </span>`;
+}
+
 function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>): string {
   const complexityRows = stats.top10Complex.map(f => {
     const level = f.complexity > 20 ? 'critical' : f.complexity > 10 ? 'warning' : 'ok';
     const badge = level === 'critical'
-      ? '<span class="badge badge-red">CRITICAL</span>'
+      ? `<span class="badge badge-red">CRITICAL</span>${infoIcon('high-complexity')}`
       : level === 'warning'
-      ? '<span class="badge badge-yellow">WARNING</span>'
+      ? `<span class="badge badge-yellow">WARNING</span>${infoIcon('high-complexity')}`
       : '<span class="badge badge-green">OK</span>';
     return `<tr>
       <td class="td-path">${f.path}</td>
@@ -192,6 +225,98 @@ function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>)
   .footer { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); margin-top: 40px; }
   .pulse { display: inline-block; width: 10px; height: 10px; background: var(--green); border-radius: 50%; margin-right: 8px; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+  /* ─── Info tooltip ─────────────────────────────── */
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    color: var(--muted);
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    position: relative;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .info-icon:hover,
+  .info-icon:focus {
+    color: #A5B4FC;
+    border-color: #A5B4FC;
+    outline: none;
+  }
+  .tooltip {
+    display: none;
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1E293B;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    width: 280px;
+    font-size: 12px;
+    line-height: 1.6;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    pointer-events: none;
+    font-weight: 400;
+    font-style: normal;
+    white-space: normal;
+  }
+  .tooltip strong {
+    display: block;
+    color: white;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .tooltip-fix {
+    display: block;
+    margin-top: 6px;
+    color: var(--green);
+    font-size: 11px;
+  }
+  .info-icon:hover .tooltip,
+  .info-icon:focus .tooltip {
+    display: block;
+  }
+
+  /* Section header tooltip */
+  .section-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    position: relative;
+    margin-left: 4px;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .section-info:hover { color: #A5B4FC; border-color: #A5B4FC; }
+  .section-info .tooltip {
+    top: 0;
+    transform: none;
+    left: 24px;
+    width: 300px;
+  }
+  .section-info:hover .tooltip { display: block; }
 </style>
 </head>
 <body>
@@ -261,7 +386,17 @@ function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>)
   </div>
 
   <div class="section">
-    <h2><span class="icon" style="background:var(--yellow)"></span>Top 10 Most Complex Files</h2>
+    <h2>
+      <span class="icon" style="background:var(--yellow)"></span>
+      Top 10 Most Complex Files
+      <span class="section-info" tabindex="0">ℹ
+        <span class="tooltip">
+          <strong>High Complexity</strong>
+          Cyclomatic complexity counts branches in code (if, for, while, etc.). High values mean the code is hard to test and reason about.<br>
+          <span class="tooltip-fix">✓ Extract conditions into named functions, use early returns.</span>
+        </span>
+      </span>
+    </h2>
     ${stats.top10Complex.length > 0 ? `
     <table>
       <thead><tr><th>File</th><th>Lines</th><th>Complexity</th></tr></thead>
@@ -270,7 +405,17 @@ function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>)
   </div>
 
   <div class="section">
-    <h2><span class="icon" style="background:var(--red)"></span>Dead Code — Unused Exports</h2>
+    <h2>
+      <span class="icon" style="background:var(--red)"></span>
+      Dead Code — Unused Exports
+      <span class="section-info" tabindex="0">ℹ
+        <span class="tooltip">
+          <strong>Dead Export</strong>
+          A symbol exported from a file but never imported anywhere in the project. Likely unused or legacy code.<br>
+          <span class="tooltip-fix">✓ Remove the export keyword or delete the code if unused.</span>
+        </span>
+      </span>
+    </h2>
     ${result.deadExports.length > 0 ? `
     <table>
       <thead><tr><th>File</th><th>Export Name</th></tr></thead>
@@ -279,7 +424,17 @@ function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>)
   </div>
 
   <div class="section">
-    <h2><span class="icon" style="background:#F59E0B"></span>God Files — Oversized Modules</h2>
+    <h2>
+      <span class="icon" style="background:#F59E0B"></span>
+      God Files — Oversized Modules
+      <span class="section-info" tabindex="0">ℹ
+        <span class="tooltip">
+          <strong>God File</strong>
+          A file with 500+ lines or 15+ imports. It accumulates too many responsibilities — hard to maintain and refactor.<br>
+          <span class="tooltip-fix">✓ Split by responsibility. One module = one concern.</span>
+        </span>
+      </span>
+    </h2>
     ${result.godFiles.length > 0 ? `
     <table>
       <thead><tr><th>File</th><th>Lines</th><th>Imports</th><th>Complexity</th></tr></thead>
@@ -288,7 +443,17 @@ function buildHtml(result: AnalysisResult, stats: ReturnType<typeof buildStats>)
   </div>
 
   <div class="section">
-    <h2><span class="icon" style="background:var(--red)"></span>Critical Nodes — High Centrality</h2>
+    <h2>
+      <span class="icon" style="background:var(--red)"></span>
+      Critical Nodes — High Centrality
+      <span class="section-info" tabindex="0">ℹ
+        <span class="tooltip">
+          <strong>Critical Node</strong>
+          A module imported by many other files. Changes here may cause cascading failures across the codebase.<br>
+          <span class="tooltip-fix">✓ Avoid adding new logic here. Add thorough unit tests.</span>
+        </span>
+      </span>
+    </h2>
     ${result.criticalFiles.length > 0 ? `
     <table>
       <thead><tr><th>File</th><th>In-Degree</th><th>Out-Degree</th><th>Centrality</th></tr></thead>

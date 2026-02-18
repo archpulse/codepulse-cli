@@ -1,0 +1,75 @@
+{
+  "totalFiles": 18,
+  "totalLines": 1803,
+  "avgComplexity": 22.2,
+  "deadExports": 3,
+  "godFiles": 0,
+  "criticalFiles": 1,
+  "top10Complex": [
+    {
+      "path": "src/analyzer/ast.ts",
+      "complexity": 92,
+      "lines": 188
+    },
+    {
+      "path": "src/index.ts",
+      "complexity": 77,
+      "lines": 324
+    },
+    {
+      "path": "src/reporter/html.ts",
+      "complexity": 45,
+      "lines": 320
+    },
+    {
+      "path": "src/analyzer/graph.ts",
+      "complexity": 36,
+      "lines": 141
+    },
+    {
+      "path": "src/analyzer/scanner.ts",
+      "complexity": 33,
+      "lines": 59
+    },
+    {
+      "path": "src/analyzer/generic.ts",
+      "complexity": 25,
+      "lines": 152
+    },
+    {
+      "path": "src/analyzer/python.ts",
+      "complexity": 23,
+      "lines": 95
+    },
+    {
+      "path": "output.ts",
+      "complexity": 14,
+      "lines": 78
+    },
+    {
+      "path": "src/commands/output.ts",
+      "complexity": 14,
+      "lines": 78
+    },
+    {
+      "path": "src/utils/license.ts",
+      "complexity": 14,
+      "lines": 78
+    }
+  ],
+  "deadExportsList": [
+    {
+      "file": "output.ts",
+      "name": "printStats"
+    },
+    {
+      "file": "output.ts",
+      "name": "printDeadCode"
+    },
+    {
+      "file": "output.ts",
+      "name": "printGodFiles"
+    }
+  ],
+  "godFilesList": []
+}

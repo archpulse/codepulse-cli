@@ -1,0 +1,11 @@
+src/
+tsconfig.json
+node_modules/
+.git/
+*.test.ts
+*.spec.ts
+.codepulserc
+.codepulse-baseline.json
+.codepulse-report/
+output.ts
+package-lock.json

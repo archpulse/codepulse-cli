@@ -1,11 +1,12 @@
 import chalk from 'chalk';
 import * as path from 'path';
 import { AnalysisResult } from '../types';
+import { EXPLANATIONS } from '../explain';
 
 export function printStats(result: AnalysisResult, dir: string): void {
-  console.log('\n' + chalk.bold.cyan('━'.repeat(52)));
+  console.log('\n' + chalk.bold.cyan('─'.repeat(52)));
   console.log(chalk.bold.white('  CodePulse') + chalk.bold.cyan(' CLI') + chalk.gray(' — Project Stats'));
-  console.log(chalk.bold.cyan('━'.repeat(52)));
+  console.log(chalk.bold.cyan('─'.repeat(52)));
 
   console.log(`\n  ${chalk.gray('Directory:')}    ${chalk.white(path.resolve(dir))}`);
   console.log(`  ${chalk.gray('Files:')}        ${chalk.white(result.totalFiles)}`);
@@ -34,7 +35,7 @@ export function printStats(result: AnalysisResult, dir: string): void {
     console.log(`  ${chalk.green('✓')} Critical nodes:  ${chalk.green('none')}`);
   }
 
-  console.log('\n' + chalk.cyan('━'.repeat(52)) + '\n');
+  console.log('\n' + chalk.cyan('─'.repeat(52)) + '\n');
 }
 
 export function printDeadCode(result: AnalysisResult): void {
@@ -46,10 +47,18 @@ export function printDeadCode(result: AnalysisResult): void {
     return;
   }
 
+  const e = EXPLANATIONS['dead-export'];
+
   for (const d of result.deadExports) {
-    console.log(`  ${chalk.gray(d.file)}  ${chalk.red(d.name)}`);
+    console.log(
+      `  ${chalk.red('✗')} ${chalk.white(d.name)}  ${chalk.gray(d.file)}\n` +
+      `    ${chalk.gray('→')} ${e.short}\n` +
+      `    ${chalk.gray('→')} ${chalk.italic(e.hint)}\n`
+    );
   }
-  console.log(chalk.gray(`\n  Total: ${result.deadExports.length} unused exports\n`));
+
+  console.log(chalk.gray(`  Total: ${result.deadExports.length} unused exports`));
+  console.log(chalk.gray(`  Run ${chalk.white('codepulse explain dead-export')} to learn more.\n`));
 }
 
 export function printGodFiles(result: AnalysisResult): void {
@@ -61,17 +70,49 @@ export function printGodFiles(result: AnalysisResult): void {
     return;
   }
 
+  const e = EXPLANATIONS['god-file'];
+
   for (const f of result.godFiles) {
     console.log(
-      `  ${chalk.yellow(f.relativePath)}\n` +
-      `    Lines: ${f.lines}  Imports: ${f.imports.length}  Complexity: ${f.complexity}\n`
+      `  ${chalk.yellow('⚠')} ${chalk.yellow(f.relativePath)}\n` +
+      `    Lines: ${chalk.white(f.lines)}  Imports: ${chalk.white(f.imports.length)}  Complexity: ${complexityColor(f.complexity)}\n` +
+      `    ${chalk.gray('→')} ${e.short}\n` +
+      `    ${chalk.gray('→')} ${chalk.italic(e.hint)}\n`
     );
   }
+
+  console.log(chalk.gray(`  Run ${chalk.white('codepulse explain god-file')} to learn more.\n`));
+}
+
+export function printCriticalNodes(result: AnalysisResult): void {
+  console.log('\n' + chalk.bold.red('Critical Nodes — High Centrality'));
+  console.log(chalk.gray('─'.repeat(50)));
+
+  if (result.criticalFiles.length === 0) {
+    console.log(chalk.green('  ✓ No critical nodes found!'));
+    return;
+  }
+
+  const e = EXPLANATIONS['critical-node'];
+
+  for (const node of result.criticalFiles.slice(0, 10)) {
+    const file = result.files.find(f => f.path === node.id);
+    const rel = file?.relativePath ?? node.id;
+
+    console.log(
+      `  ${chalk.red('!')} ${chalk.white(rel)}\n` +
+      `    Imported by: ${chalk.red(node.inDegree)} files  Centrality: ${chalk.red(node.centrality)}\n` +
+      `    ${chalk.gray('→')} ${e.short}\n` +
+      `    ${chalk.gray('→')} ${chalk.italic(e.hint)}\n`
+    );
+  }
+
+  console.log(chalk.gray(`  Run ${chalk.white('codepulse explain critical-node')} to learn more.\n`));
 }
 
 function complexityColor(value: number): string {
   const v = Math.round(value * 10) / 10;
-  if (v > 15) return chalk.red(v);
-  if (v > 8) return chalk.yellow(v);
-  return chalk.green(v);
+  if (v > 15) return chalk.red(String(v));
+  if (v > 8) return chalk.yellow(String(v));
+  return chalk.green(String(v));
 }

@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import { analyze } from './analyzer';
 import { generateReport } from './reporter/html';
 import { printStats, printDeadCode } from './commands/output';
+import { EXPLANATIONS, ExplainKey } from './explain';
 import { Issue, IssueSeverity, IssueType } from './types';
 
 const program = new Command();
@@ -181,6 +182,60 @@ program
     }
   });
 
+// ─── codepulse explain ───────────────────────────────────────
+program
+  .command('explain [topic]')
+  .description('Explain what a detected issue means and how to fix it')
+  .action((topic?: string) => {
+    const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
+
+    if (!topic) {
+      console.log('\n' + chalk.bold.cyan('  CodePulse — Available Topics'));
+      console.log(chalk.gray('  ─────────────────────────────\n'));
+      for (const key of topics) {
+        const e = EXPLANATIONS[key];
+        console.log(`  ${chalk.cyan(key)}`);
+        console.log(`    ${chalk.gray(e.short)}\n`);
+      }
+      console.log(chalk.gray(`  Usage: ${chalk.white('codepulse explain <topic>')}\n`));
+      return;
+    }
+
+    const key = topic.toLowerCase() as ExplainKey;
+    const entry = EXPLANATIONS[key];
+
+    if (!entry) {
+      console.log(chalk.red(`\n  Unknown topic: "${topic}"`));
+      console.log(chalk.gray(`  Available: ${topics.join(', ')}\n`));
+      process.exit(1);
+    }
+
+    const { full } = entry;
+
+    console.log('\n' + chalk.bold.cyan('─'.repeat(52)));
+    console.log(chalk.bold.white(`  ${key.toUpperCase().replace(/-/g, ' ')}`));
+    console.log(chalk.cyan('─'.repeat(52)) + '\n');
+
+    console.log(`  ${chalk.white(full.description)}\n`);
+
+    console.log(chalk.bold.yellow('  Detected when:'));
+    for (const c of full.criteria) {
+      console.log(`    ${chalk.gray('•')} ${c}`);
+    }
+
+    console.log('\n' + chalk.bold.red('  Risks:'));
+    for (const r of full.risks) {
+      console.log(`    ${chalk.red('✗')} ${r}`);
+    }
+
+    console.log('\n' + chalk.bold.green('  Recommended fixes:'));
+    for (const f of full.fix) {
+      console.log(`    ${chalk.green('✓')} ${f}`);
+    }
+
+    console.log('\n' + chalk.gray('─'.repeat(52)) + '\n');
+  });
+
 // ─── codepulse activate ───────────────────────────────────────
 program
   .command('activate <key>')
@@ -225,7 +280,6 @@ function filterIssues(issues: Issue[], opts: any): Issue[] {
   let result = [...issues];
 
   if (opts.strict) {
-    // In strict mode: lower complexity threshold (>15 = error), dead-export = error
     result = result.map(i => {
       if (i.type === 'dead-export' || i.type === 'god-file') return { ...i, severity: 'error' as IssueSeverity };
       return i;
