@@ -1,6 +1,6 @@
 {
   "name": "codepulse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deep code structure analysis for large JS/TS and Python projects",
   "main": "dist/index.js",
   "bin": {
