@@ -1,57 +1,55 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { AnalysisResult, FileNode, GraphNode } from '../types';
-import { calculateHealthScore } from './html';
-import { getCss, getScripts } from './template-parts';
+import type { AnalysisResult } from "../types/index";
+import { calculateHealthScore } from "./stats";
+import { getCss, getScripts } from "./template-parts";
 
-const REPORT_DIR = '.codepulse-report';
+const _REPORT_DIR = ".codepulse-report";
 
 const TOOLTIPS = {
-  'god-file': {
-    title: 'God File',
-    body: 'A file with 500+ lines or 15+ imports. Accumulates too many responsibilities — hard to maintain and refactor.',
-    fix: 'Split by responsibility, extract modules.',
-  },
-  'dead-export': {
-    title: 'Dead Export',
-    body: 'A symbol exported but never imported anywhere in the project. Likely unused or legacy code.',
-    fix: 'Remove the export or delete if unused.',
-  },
-  'critical-node': {
-    title: 'Critical Node',
-    body: 'Imported by many modules. Changes here may cause cascading failures across the codebase.',
-    fix: 'Avoid adding logic here. Add tests as safety net.',
-  },
-  'high-complexity': {
-    title: 'High Complexity',
-    body: 'Cyclomatic complexity > 10. Too many branches and decision points — hard to test and reason about.',
-    fix: 'Extract conditions into named functions, use early returns.',
-  },
-  'vulnerability': {
-    title: 'Vulnerability',
-    body: 'Critical security issue such as hardcoded secrets, code injection (eval), or SQL injection patterns.',
-    fix: 'Use environment variables for secrets, avoid eval(), use parameterized queries.',
-  },
-  'duplication': {
-    title: 'Duplication',
-    body: 'Identical code blocks detected in multiple files. Violates DRY principle.',
-    fix: 'Extract common logic into shared functions.',
-  },
-  'dependency-vulnerability': {
-    title: 'SCA Issue',
-    body: 'A third-party dependency has a known vulnerability.',
-    fix: 'Upgrade the package to a secure version.',
-  },
-  'hotspot': {
-    title: 'Code Hotspot',
-    body: 'High complexity combined with frequent changes. These are the most likely places for bugs to occur.',
-    fix: 'Refactor to reduce complexity and decouple logic.',
-  },
+	"god-file": {
+		title: "God File",
+		body: "A file with 500+ lines or 15+ imports. Accumulates too many responsibilities — hard to maintain and refactor.",
+		fix: "Split by responsibility, extract modules.",
+	},
+	"dead-export": {
+		title: "Dead Export",
+		body: "A symbol exported but never imported anywhere in the project. Likely unused or legacy code.",
+		fix: "Remove the export or delete if unused.",
+	},
+	"critical-node": {
+		title: "Critical Node",
+		body: "Imported by many modules. Changes here may cause cascading failures across the codebase.",
+		fix: "Avoid adding logic here. Add tests as safety net.",
+	},
+	"high-complexity": {
+		title: "High Complexity",
+		body: "Cyclomatic complexity > 10. Too many branches and decision points — hard to test and reason about.",
+		fix: "Extract conditions into named functions, use early returns.",
+	},
+	vulnerability: {
+		title: "Vulnerability",
+		body: "Critical security issue such as hardcoded secrets, code injection (eval), or SQL injection patterns.",
+		fix: "Use environment variables for secrets, avoid eval(), use parameterized queries.",
+	},
+	duplication: {
+		title: "Duplication",
+		body: "Identical code blocks detected in multiple files. Violates DRY principle.",
+		fix: "Extract common logic into shared functions.",
+	},
+	"dependency-vulnerability": {
+		title: "SCA Issue",
+		body: "A third-party dependency has a known vulnerability.",
+		fix: "Upgrade the package to a secure version.",
+	},
+	hotspot: {
+		title: "Code Hotspot",
+		body: "High complexity combined with frequent changes. These are the most likely places for bugs to occur.",
+		fix: "Refactor to reduce complexity and decouple logic.",
+	},
 };
 
 function infoIcon(type: keyof typeof TOOLTIPS): string {
-  const t = TOOLTIPS[type];
-  return `<span class="info-icon" tabindex="0">
+	const t = TOOLTIPS[type];
+	return `<span class="info-icon" tabindex="0">
     ℹ
     <span class="tooltip">
       <strong>${t.title}</strong><br>
@@ -61,75 +59,109 @@ function infoIcon(type: keyof typeof TOOLTIPS): string {
   </span>`;
 }
 
+function sectionIcon(type: keyof typeof TOOLTIPS, color: string): string {
+	const t = TOOLTIPS[type];
+	return `<span class="icon" style="background:${color}"></span>
+    ${t.title}s
+    <span class="section-info" tabindex="0">ℹ
+      <span class="tooltip">
+        <strong>${t.title}</strong><br>
+        ${t.body}<br>
+        <span class="tooltip-fix">✓ ${t.fix}</span>
+      </span>
+    </span>`;
+}
+
 function renderComplexityRows(stats: any): string {
-  return stats.top10Complex.map((f: any) => {
-    const level = f.complexity > 20 ? 'critical' : f.complexity > 10 ? 'warning' : 'ok';
-    const badge = level === 'critical'
-      ? `<span class="badge badge-red">CRITICAL</span>${infoIcon('high-complexity')}`
-      : level === 'warning'
-      ? `<span class="badge badge-yellow">WARNING</span>${infoIcon('high-complexity')}`
-      : '<span class="badge badge-green">OK</span>';
-    return `<tr>
+	return stats.top10Complex
+		.map((f: any) => {
+			const level =
+				f.complexity > 20 ? "critical" : f.complexity > 10 ? "warning" : "ok";
+			const badge =
+				level === "critical"
+					? `<span class="badge badge-red">CRITICAL</span>${infoIcon("high-complexity")}`
+					: level === "warning"
+						? `<span class="badge badge-yellow">WARNING</span>${infoIcon("high-complexity")}`
+						: '<span class="badge badge-green">OK</span>';
+			return `<tr>
       <td class="td-path">${f.path}</td>
       <td>${f.lines}</td>
       <td>${f.complexity} ${badge}</td>
     </tr>`;
-  }).join('\n');
+		})
+		.join("\n");
 }
 
 function renderVulnerabilityRows(stats: any): string {
-  return stats.vulnerabilitiesList.map((v: any) =>
-    `<tr>
-      <td class="td-path">${v.file}${v.line ? `:${v.line}` : ''}</td>
+	return stats.vulnerabilitiesList
+		.map(
+			(v: any) =>
+				`<tr>
+      <td class="td-path">${v.file}${v.line ? `:${v.line}` : ""}</td>
       <td style="color:var(--red)">${v.message}</td>
       <td style="font-style:italic;color:var(--muted)">${v.suggestion}</td>
-    </tr>`
-  ).join('\n');
+    </tr>`,
+		)
+		.join("\n");
 }
 
 function renderDeadRows(result: AnalysisResult): string {
-  return result.deadExports.slice(0, 50).map(d =>
-    `<tr><td class="td-path">${d.file}</td><td><code>${d.name}</code></td></tr>`
-  ).join('\n');
+	return result.deadExports
+		.slice(0, 50)
+		.map(
+			(d) =>
+				`<tr><td class="td-path">${d.file}</td><td><code>${d.name}</code></td></tr>`,
+		)
+		.join("\n");
 }
 
 function renderGodRows(stats: any): string {
-  return stats.godFilesList.map((f: any) =>
-    `<tr><td class="td-path">${f.path}</td><td>${f.lines}</td><td>${f.imports}</td><td>${f.complexity}</td></tr>`
-  ).join('\n');
+	return stats.godFilesList
+		.map(
+			(f: any) =>
+				`<tr><td class="td-path">${f.path}</td><td>${f.lines}</td><td>${f.imports}</td><td>${f.complexity}</td></tr>`,
+		)
+		.join("\n");
 }
 
 function renderCriticalRows(result: AnalysisResult): string {
-  return result.criticalFiles.slice(0, 10).map(n => {
-    const file = result.files.find(f => f.path === n.id);
-    return `<tr>
+	return result.criticalFiles
+		.slice(0, 10)
+		.map((n) => {
+			const file = result.files.find((f) => f.path === n.id);
+			return `<tr>
       <td class="td-path">${file?.relativePath ?? n.id}</td>
       <td>${n.inDegree}</td>
       <td>${n.outDegree}</td>
       <td>${n.centrality}</td>
     </tr>`;
-  }).join('\n');
+		})
+		.join("\n");
 }
 
 function renderHotspotRows(stats: any): string {
-  return stats.hotspots.map((h: any) => `
+	return stats.hotspots
+		.map(
+			(h: any) => `
     <tr>
       <td class="td-path">${h.file}</td>
       <td>${h.complexity}</td>
       <td>${h.churn}</td>
-      <td><span style="color:${h.score > 50 ? 'var(--red)' : 'var(--yellow)'}">${h.score}</span></td>
-    </tr>`).join('');
+      <td><span style="color:${h.score > 50 ? "var(--red)" : "var(--yellow)"}">${h.score}</span></td>
+    </tr>`,
+		)
+		.join("");
 }
 
 export function buildHtml(result: AnalysisResult, stats: any): string {
-  const complexityRows = renderComplexityRows(stats);
-  const vulnerabilityRows = renderVulnerabilityRows(stats);
-  const deadRows = renderDeadRows(result);
-  const godRows = renderGodRows(stats);
-  const criticalRows = renderCriticalRows(result);
-  const hotspotRows = renderHotspotRows(stats);
+	const complexityRows = renderComplexityRows(stats);
+	const vulnerabilityRows = renderVulnerabilityRows(stats);
+	const deadRows = renderDeadRows(result);
+	const godRows = renderGodRows(stats);
+	const criticalRows = renderCriticalRows(result);
+	const hotspotRows = renderHotspotRows(stats);
 
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -165,17 +197,17 @@ ${getCss()}
     </div>
     <div class="stat-card">
       <div class="label">Avg Complexity</div>
-      <div class="value" style="color:${stats.avgComplexity > 15 ? 'var(--red)' : stats.avgComplexity > 8 ? 'var(--yellow)' : 'var(--green)'}">${stats.avgComplexity}</div>
+      <div class="value" style="color:${stats.avgComplexity > 15 ? "var(--red)" : stats.avgComplexity > 8 ? "var(--yellow)" : "var(--green)"}">${stats.avgComplexity}</div>
       <div class="sub">cyclomatic avg</div>
     </div>
-    <div class="stat-card" style="border-color:${stats.vulnerabilities > 0 ? 'var(--red)' : 'var(--border)'}">
-      <div class="label" style="color:${stats.vulnerabilities > 0 ? 'var(--red)' : 'var(--muted)'}">Vulnerabilities</div>
-      <div class="value" style="color:${stats.vulnerabilities > 0 ? 'var(--red)' : 'var(--green)'}">${stats.vulnerabilities}</div>
+    <div class="stat-card" style="border-color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--border)"}">
+      <div class="label" style="color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--muted)"}">Vulnerabilities</div>
+      <div class="value" style="color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--green)"}">${stats.vulnerabilities}</div>
       <div class="sub">security issues</div>
     </div>
     <div class="stat-card">
       <div class="label">Hotspots</div>
-      <div class="value" style="color:${stats.hotspots.length > 5 ? 'var(--red)' : stats.hotspots.length > 0 ? 'var(--yellow)' : 'var(--green)'}">${stats.hotspots.length}</div>
+      <div class="value" style="color:${stats.hotspots.length > 5 ? "var(--red)" : stats.hotspots.length > 0 ? "var(--yellow)" : "var(--green)"}">${stats.hotspots.length}</div>
       <div class="sub">risk zones</div>
     </div>
   </div>
@@ -183,17 +215,17 @@ ${getCss()}
   <div class="grid-4" style="margin-top:-24px">
     <div class="stat-card">
       <div class="label">Dead Exports</div>
-      <div class="value" style="color:${stats.deadExports > 0 ? 'var(--red)' : 'var(--green)'}">${stats.deadExports}</div>
+      <div class="value" style="color:${stats.deadExports > 0 ? "var(--red)" : "var(--green)"}">${stats.deadExports}</div>
       <div class="sub">unused exports</div>
     </div>
     <div class="stat-card">
       <div class="label">God Files</div>
-      <div class="value" style="color:${stats.godFiles > 0 ? 'var(--yellow)' : 'var(--green)'}">${stats.godFiles}</div>
+      <div class="value" style="color:${stats.godFiles > 0 ? "var(--yellow)" : "var(--green)"}">${stats.godFiles}</div>
       <div class="sub">oversized modules</div>
     </div>
     <div class="stat-card">
       <div class="label">Critical Nodes</div>
-      <div class="value" style="color:${stats.criticalFiles > 0 ? 'var(--red)' : 'var(--green)'}">${stats.criticalFiles}</div>
+      <div class="value" style="color:${stats.criticalFiles > 0 ? "var(--red)" : "var(--green)"}">${stats.criticalFiles}</div>
       <div class="sub">high dependency</div>
     </div>
     <div class="stat-card">
@@ -226,116 +258,92 @@ ${getCss()}
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:var(--red)"></span>
-      Critical Vulnerabilities
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>Vulnerability</strong>
-          Critical security issue such as hardcoded secrets, code injection (eval), or SQL injection patterns.<br>
-          <span class="tooltip-fix">✓ Use environment variables for secrets, avoid eval(), use parameterized queries.</span>
-        </span>
-      </span>
+      ${sectionIcon("vulnerability", "var(--red)")}
     </h2>
-    ${stats.vulnerabilities > 0 ? `
+    ${
+			stats.vulnerabilities > 0
+				? `
     <table>
       <thead><tr><th>Location</th><th>Issue</th><th>Recommendation</th></tr></thead>
       <tbody>${vulnerabilityRows}</tbody>
-    </table>` : '<div class="empty" style="padding:24px">✅ No security vulnerabilities detected</div>'}
+    </table>`
+				: '<div class="empty" style="padding:24px">✅ No security vulnerabilities detected</div>'
+		}
   </div>
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:#EC4899"></span>
-      Danger Zones — Hotspots
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>Code Hotspot</strong>
-          A file with high complexity that is also frequently changed. This combination is the strongest predictor of future bugs.<br>
-          <span class="tooltip-fix">✓ Refactor to simplify logic and reduce churn.</span>
-        </span>
-      </span>
+      ${sectionIcon("hotspot", "#EC4899")}
     </h2>
-    ${stats.hotspots.length > 0 ? `
+    ${
+			stats.hotspots.length > 0
+				? `
     <table>
       <thead><tr><th>File</th><th>Complexity</th><th>Churn (6m)</th><th>Risk Score</th></tr></thead>
       <tbody>${hotspotRows}</tbody>
-    </table>` : '<div class="empty" style="padding:24px">✅ No hotspots detected</div>'}
+    </table>`
+				: '<div class="empty" style="padding:24px">✅ No hotspots detected</div>'
+		}
   </div>
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:var(--yellow)"></span>
-      Top 10 Most Complex Files
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>High Complexity</strong>
-          Cyclomatic complexity counts branches in code (if, for, while, etc.). High values mean the code is hard to test and reason about.<br>
-          <span class="tooltip-fix">✓ Extract conditions into named functions, use early returns.</span>
-        </span>
-      </span>
+      ${sectionIcon("high-complexity", "var(--yellow)")}
     </h2>
-    ${stats.top10Complex.length > 0 ? `
+    ${
+			stats.top10Complex.length > 0
+				? `
     <table>
       <thead><tr><th>File</th><th>Lines</th><th>Complexity</th></tr></thead>
       <tbody>${complexityRows}</tbody>
-    </table>` : '<div class="empty">No files found</div>'}
+    </table>`
+				: '<div class="empty">No files found</div>'
+		}
   </div>
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:var(--red)"></span>
-      Dead Code — Unused Exports
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>Dead Export</strong>
-          A symbol exported from a file but never imported anywhere in the project. Likely unused or legacy code.<br>
-          <span class="tooltip-fix">✓ Remove the export keyword or delete the code if unused.</span>
-        </span>
-      </span>
+      ${sectionIcon("dead-export", "var(--red)")}
     </h2>
-    ${result.deadExports.length > 0 ? `
+    ${
+			result.deadExports.length > 0
+				? `
     <table>
       <thead><tr><th>File</th><th>Export Name</th></tr></thead>
       <tbody>${deadRows}</tbody>
-    </table>` : '<div class="empty" style="padding:24px">✅ No dead exports detected</div>'}
+    </table>`
+				: '<div class="empty" style="padding:24px">✅ No dead exports detected</div>'
+		}
   </div>
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:#F59E0B"></span>
-      God Files — Oversized Modules
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>God File</strong>
-          A file with 500+ lines or 15+ imports. It accumulates too many responsibilities — hard to maintain and refactor.<br>
-          <span class="tooltip-fix">✓ Split by responsibility. One module = one concern.</span>
-        </span>
-      </span>
+      ${sectionIcon("god-file", "#F59E0B")}
     </h2>
-    ${result.godFiles.length > 0 ? `
+    ${
+			result.godFiles.length > 0
+				? `
     <table>
       <thead><tr><th>File</th><th>Lines</th><th>Imports</th><th>Complexity</th></tr></thead>
       <tbody>${godRows}</tbody>
-    </table>` : '<div class="empty" style="padding:24px">✅ No god files detected</div>'}
+    </table>`
+				: '<div class="empty" style="padding:24px">✅ No god files detected</div>'
+		}
   </div>
 
   <div class="section">
     <h2>
-      <span class="icon" style="background:var(--red)"></span>
-      Critical Nodes — High Centrality
-      <span class="section-info" tabindex="0">ℹ
-        <span class="tooltip">
-          <strong>Critical Node</strong>
-          A module imported by many other files. Changes here may cause cascading failures across the codebase.<br>
-          <span class="tooltip-fix">✓ Avoid adding new logic here. Add thorough unit tests.</span>
-        </span>
-      </span>
+      ${sectionIcon("critical-node", "var(--red)")}
     </h2>
-    ${result.criticalFiles.length > 0 ? `
+    ${
+			result.criticalFiles.length > 0
+				? `
     <table>
       <thead><tr><th>File</th><th>In-Degree</th><th>Out-Degree</th><th>Centrality</th></tr></thead>
       <tbody>${criticalRows}</tbody>
-    </table>` : '<div class="empty" style="padding:24px">✅ No critical nodes</div>'}
+    </table>`
+				: '<div class="empty" style="padding:24px">✅ No critical nodes</div>'
+		}
   </div>
 
 </div>

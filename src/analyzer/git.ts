@@ -1,40 +1,36 @@
-import { execSync } from 'child_process';
-import { FileNode, Hotspot } from '../types';
+import { execSync } from "node:child_process";
+import type { FileNode, Hotspot } from "../types/index";
 
 export function getGitChurn(dir: string): Map<string, number> {
-  const churnMap = new Map<string, number>();
-  try {
+	const churnMap = new Map<string, number>();
+	try {
+		const output = execSync(
+			'git log --format=format: --name-only --since="6 months ago"',
+			{ cwd: dir, encoding: "utf-8" },
+		);
 
-    const output = execSync(
-      'git log --format=format: --name-only --since="6 months ago"',
-      { cwd: dir, encoding: 'utf-8' }
-    );
-
-    const files = output.split('\n').filter(f => f.trim().length > 0);
-    for (const file of files) {
-      churnMap.set(file, (churnMap.get(file) || 0) + 1);
-    }
-  } catch (err) {
-
-  }
-  return churnMap;
+		const files = output.split("\n").filter((f) => f.trim().length > 0);
+		for (const file of files) {
+			churnMap.set(file, (churnMap.get(file) || 0) + 1);
+		}
+	} catch (_err) {}
+	return churnMap;
 }
 
 export function calculateHotspots(files: FileNode[]): Hotspot[] {
-  return files
-    .map(f => {
-      const churn = f.churn || 0;
+	return files
+		.map((f) => {
+			const churn = f.churn || 0;
 
-
-      const score = f.complexity * Math.log2(churn + 1);
-      return {
-        file: f.relativePath,
-        score: Math.round(score * 10) / 10,
-        complexity: f.complexity,
-        churn,
-      };
-    })
-    .filter(h => h.score > 20 && h.churn >= 2)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
+			const score = f.complexity * Math.log2(churn + 1);
+			return {
+				file: f.relativePath,
+				score: Math.round(score * 10) / 10,
+				complexity: f.complexity,
+				churn,
+			};
+		})
+		.filter((h) => h.score > 20 && h.churn >= 2)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, 10);
 }

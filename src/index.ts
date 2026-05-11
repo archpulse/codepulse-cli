@@ -1,317 +1,390 @@
 #!/usr/bin/env node
-import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import * as path from 'path';
-import * as fs from 'fs';
-import updateNotifier from 'update-notifier';
-import { analyze } from './analyzer';
-import { generateReport, calculateHealthScore } from './reporter/html';
-import { generateSarif } from './reporter/sarif';
-import { generateBadge, saveBadge } from './commands/badge';
-import { printStats, printDeadCode } from './commands/output';
-import { EXPLANATIONS, ExplainKey } from './explain';
-import { shouldRunMcpSetup, setupMcpConfigs } from './mcp-setup';
-import { runMcpServer } from './commands/mcp';
-import { runScan } from './commands/scan';
-import { runLicense } from './commands/license';
-import { setLocale, t, Locale } from './utils/i18n';
-import { listPlugins } from './utils/plugins';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import chalk from "chalk";
+import { Command } from "commander";
+import ora from "ora";
+import updateNotifier from "update-notifier";
+import { analyze } from "./analyzer";
+import {
+	generateBadge,
+	printDeadCode,
+	printStats,
+	runInstallDeps,
+	runLicense,
+	runMcpServer,
+	runScan,
+	saveBadge,
+} from "./commands";
+import { EXPLANATIONS, type ExplainKey } from "./explain";
+import {
+	markDepsAsInstalled,
+	setupMcpConfigs,
+	shouldRunDepsSetup,
+	shouldRunMcpSetup,
+} from "./mcp-setup";
+import { generateReport } from "./reporter/html";
+import { calculateHealthScore } from "./reporter/stats";
+import { type Locale, setLocale, t } from "./utils/i18n";
 
-const pkgPath = path.resolve(__dirname, '../package.json');
-const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+// ... (other imports) ...
+import { listPlugins } from "./utils/plugins";
 
-const isWin = process.platform === 'win32';
+const pkgPath = path.resolve(__dirname, "../package.json");
+const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+
+const isWin = process.platform === "win32";
 
 // Manually check for --lang flag before commander parses
-const langIndex = process.argv.indexOf('--lang');
+const langIndex = process.argv.indexOf("--lang");
 if (langIndex !== -1 && process.argv[langIndex + 1]) {
-  setLocale(process.argv[langIndex + 1] as Locale);
+	setLocale(process.argv[langIndex + 1] as Locale);
 }
 
 const program = new Command();
 
 // Global option for language (keep for documentation)
-program
-  .option('--lang <locale>', 'Set language (en, ua, cs, ko, ru, de, fr)', 'en');
+program.option(
+	"--lang <locale>",
+	"Set language (en, ua, cs, ko, ru, de, fr)",
+	"en",
+);
 
 // Check for updates
-const notifier = updateNotifier({ 
-  pkg,
-  updateCheckInterval: 0, // Check every time for debugging
-  distTag: 'latest'
+const notifier = updateNotifier({
+	pkg,
+	updateCheckInterval: 0, // Check every time for debugging
+	distTag: "latest",
 });
 
 if (notifier.update && notifier.update.latest !== pkg.version) {
-  notifier.notify({ isGlobal: true, defer: false });
+	notifier.notify({ isGlobal: true, defer: false });
 }
 
-// Auto-configure MCP on first run
-if (shouldRunMcpSetup()) {
-  const count = setupMcpConfigs();
-  if (count > 0) {
-    const symbol = isWin ? 'v' : '✓';
-    console.log(chalk.green(`\n  ${symbol} Automatically configured CodePulse as an MCP server for ${count} AI agent(s) on your PC!\n`));
-  }
-}
+// Auto-configure on first run
+(async () => {
+	// 1. Dependency Setup (Independently of MCP)
+	if (shouldRunDepsSetup()) {
+		await runInstallDeps(true);
+		markDepsAsInstalled();
+	}
+
+	// 2. MCP Setup
+	if (shouldRunMcpSetup()) {
+		const count = setupMcpConfigs();
+		if (count > 0) {
+			const symbol = isWin ? "v" : "✓";
+			console.log(
+				chalk.green(
+					`\n  ${symbol} Automatically configured CodePulse as an MCP server for ${count} AI agent(s) on your PC!\n`,
+				),
+			);
+		}
+	}
+})();
 
 program
-  .name('codepulse')
-  .description(t('cli.description'))
-  .version(pkg.version);
+	.name("codepulse")
+	.description(t("cli.description"))
+	.version(pkg.version);
 
 program.configureHelp({
-  subcommandTerm: (cmd) => chalk.cyan(cmd.name()),
-  subcommandDescription: (cmd) => chalk.gray(cmd.description()),
-  optionTerm: (option) => chalk.yellow(option.flags),
-  optionDescription: (option) => chalk.gray(option.description),
-  commandUsage: (command) => chalk.magenta(command.name() + ' ' + command.usage()),
-  commandDescription: (command) => chalk.italic(command.description()),
+	subcommandTerm: (cmd) => chalk.cyan(cmd.name()),
+	subcommandDescription: (cmd) => chalk.gray(cmd.description()),
+	optionTerm: (option) => chalk.yellow(option.flags),
+	optionDescription: (option) => chalk.gray(option.description),
+	commandUsage: (command) =>
+		chalk.magenta(`${command.name()} ${command.usage()}`),
+	commandDescription: (command) => chalk.italic(command.description()),
 });
 
-program.addHelpText('before', `
-${chalk.bold.blue('  ____           _      ____       _               ')}
-${chalk.bold.blue(' / ___|___   __| | ___|  _ \\ _   _| |___  ___      ')}
-${chalk.bold.blue('| |   / _ \\ / _` |/ _ \\ |_) | | | | / __|/ _ \\     ')}
-${chalk.bold.blue('| |__| (_) | (_| |  __/  __/| |_| | \\__ \\  __/     ')}
-${chalk.bold.blue(' \\____\\___/ \\__,_|\\___|_|    \\__,_|_|___/\\___|     ')}
-`);
+program.addHelpText(
+	"before",
+	`
+${chalk.bold.blue("  ____           _      ____       _               ")}
+${chalk.bold.blue(" / ___|___   __| | ___|  _ \\ _   _| |___  ___      ")}
+${chalk.bold.blue("| |   / _ \\ / _` |/ _ \\ |_) | | | | / __|/ _ \\     ")}
+${chalk.bold.blue("| |__| (_) | (_| |  __/  __/| |_| | \\__ \\  __/     ")}
+${chalk.bold.blue(" \\____\\___/ \\__,_|\\___|_|    \\__,_|_|___/\\___|     ")}
+`,
+);
 
-program.addHelpText('after', `
-${chalk.bold(t('cli.examples'))}
-  ${chalk.gray('$')} codepulse scan .
-  ${chalk.gray('$')} codepulse stats src --json
-  ${chalk.gray('$')} codepulse explain complexity
-  ${chalk.gray('$')} codepulse license mit "John Doe"
-`);
-
-program
-  .command('license <type> [name]')
-  .description('Generate a license file (mit, apache, gpl)')
-  .action(runLicense);
-
-program
-  .command('mcp')
-  .description('Start the Model Context Protocol (MCP) server for AI agents')
-  .action(async () => {
-    try {
-      await runMcpServer();
-    } catch (err) {
-      console.error(chalk.red('MCP Server failed to start:'), err);
-      process.exit(1);
-    }
-  });
+program.addHelpText(
+	"after",
+	`
+${chalk.bold(t("cli.examples"))}
+  ${chalk.gray("$")} codepulse scan .
+  ${chalk.gray("$")} codepulse stats src --json
+  ${chalk.gray("$")} codepulse explain complexity
+  ${chalk.gray("$")} codepulse license mit "John Doe"
+`,
+);
 
 program
-  .command('setup-mcp')
-  .description('Manually trigger automatic MCP configuration for AI agents')
-  .action(() => {
-    const count = setupMcpConfigs();
-    if (count > 0) {
-      console.log(chalk.green(`\n  ✓ Successfully configured CodePulse as an MCP server for ${count} AI agent(s)!\n`));
-    } else {
-      console.log(chalk.yellow('\n  ! No supported AI agent configurations found on this system.\n'));
-    }
-  });
+	.command("license <type> [name]")
+	.description("Generate a license file (mit, apache, gpl)")
+	.action(runLicense);
 
 program
-  .command('scan [dir]')
-  .description('Analyze project and generate full HTML report')
-  .option('--open', 'Open report in browser after generation')
-  .option('--sarif', 'Generate SARIF report for CI/CD')
-  .option('-d, --debug', 'Show detailed issues list')
-  .option('--json', 'Output issues as JSON (CI-friendly)')
-  .option('--focus <type>', 'Filter by issue type (dead-export|high-complexity|god-file|critical-node)')
-  .option('--severity <level>', 'Filter by severity (info|warning|error)')
-  .option('--max-issues <number>', 'Limit number of issues shown')
-  .option('--fail-on <level>', 'Exit with code 1 if issues of this severity exist')
-  .option('--group-by <field>', 'Group output by field (file|type|severity)')
-  .option('--strict', 'Strict mode: treat warnings as errors, lower thresholds')
-  .action(runScan);
+	.command("install-deps")
+	.description(
+		"Automatically install all required external linters (Biome, Ruff, Cppcheck, ShellCheck, GolangCI)",
+	)
+	.action(runInstallDeps);
 
 program
-  .command('stats [dir]')
-  .description('Print quick stats to console')
-  .option('--json', 'Output as JSON')
-  .action(async (dir = '.', opts) => {
-    const absDir = path.resolve(dir);
-    const spinner = ora('Analyzing...').start();
-    try {
-      const result = await analyze(absDir);
-      spinner.stop();
-      if (opts.json) {
-        console.log(JSON.stringify({
-          totalFiles: result.totalFiles,
-          totalLines: result.totalLines,
-          avgComplexity: result.avgComplexity,
-          issues: result.issues.length,
-          errors: result.issues.filter(i => i.severity === 'error').length,
-          warnings: result.issues.filter(i => i.severity === 'warning').length,
-        }, null, 2));
-      } else {
-        printStats(result, absDir);
-      }
-    } catch (err) {
-      spinner.fail('Failed');
-      console.error(err);
-    }
-  });
+	.command("mcp")
+	.description("Start the Model Context Protocol (MCP) server for AI agents")
+	.action(async () => {
+		try {
+			await runMcpServer();
+		} catch (err) {
+			console.error(chalk.red("MCP Server failed to start:"), err);
+			process.exit(1);
+		}
+	});
 
 program
-  .command('dead [dir]')
-  .description('Show unused exports')
-  .option('--json', 'Output as JSON')
-  .action(async (dir = '.', opts) => {
-    const absDir = path.resolve(dir);
-    const spinner = ora('Detecting dead code...').start();
-    try {
-      const result = await analyze(absDir);
-      spinner.stop();
-      if (opts.json) {
-        const dead = result.issues.filter(i => i.type === 'dead-export');
-        console.log(JSON.stringify(dead, null, 2));
-      } else {
-        printDeadCode(result);
-      }
-    } catch (err) {
-      spinner.fail('Failed');
-      console.error(err);
-    }
-  });
+	.command("setup-mcp")
+	.description("Manually trigger automatic MCP configuration for AI agents")
+	.action(() => {
+		const count = setupMcpConfigs();
+		if (count > 0) {
+			console.log(
+				chalk.green(
+					`\n  ✓ Successfully configured CodePulse as an MCP server for ${count} AI agent(s)!\n`,
+				),
+			);
+		} else {
+			console.log(
+				chalk.yellow(
+					"\n  ! No supported AI agent configurations found on this system.\n",
+				),
+			);
+		}
+	});
 
 program
-  .command('graph [dir]')
-  .description('Generate only the dependency graph SVG')
-  .action(async (dir = '.') => {
-    const absDir = path.resolve(dir);
-    const spinner = ora('Building graph...').start();
-    try {
-      const result = await analyze(absDir);
-      const reportPath = generateReport(result, absDir);
-      spinner.succeed(chalk.green('Graph saved!'));
-      console.log(`  ${chalk.cyan(path.join(reportPath, 'graph.svg'))}\n`);
-    } catch (err) {
-      spinner.fail('Failed');
-      console.error(err);
-    }
-  });
+	.command("scan [dir]")
+	.description("Analyze project and generate full HTML report")
+	.option("--open", "Open report in browser after generation")
+	.option("--sarif", "Generate SARIF report for CI/CD")
+	.option("-d, --debug", "Show detailed issues list")
+	.option("--json", "Output issues as JSON (CI-friendly)")
+	.option(
+		"--focus <type>",
+		"Filter by issue type (dead-export|high-complexity|god-file|critical-node)",
+	)
+	.option("--severity <level>", "Filter by severity (info|warning|error)")
+	.option("--max-issues <number>", "Limit number of issues shown")
+	.option(
+		"--fail-on <level>",
+		"Exit with code 1 if issues of this severity exist",
+	)
+	.option("--group-by <field>", "Group output by field (file|type|severity)")
+	.option("--strict", "Strict mode: treat warnings as errors, lower thresholds")
+	.action(runScan);
 
 program
-  .command('badge [dir]')
-  .description('Generate a quality badge SVG')
-  .action(async (dir = '.') => {
-    const absDir = path.resolve(dir);
-    try {
-      const result = await analyze(absDir);
-      const healthStats = {
-        vulnerabilities: result.issues.filter(i => i.type === 'vulnerability').length,
-        deadExports: result.deadExports.length,
-        godFiles: result.godFiles.length,
-        criticalFiles: result.criticalFiles.length,
-        hotspots: result.hotspots,
-        avgComplexity: result.avgComplexity
-      };
-      const score = calculateHealthScore(healthStats, result);
-      const badgeSvg = generateBadge(result, score);
-      const badgePath = saveBadge(badgeSvg, absDir);
-      console.log(chalk.green(`\n  ✓ Badge generated: ${badgePath}`));
-      console.log(chalk.gray(`    Score: ${score}/100\n`));
-    } catch (err) {
-      console.error(chalk.red('Failed to generate badge'), err);
-    }
-  });
+	.command("stats [dir]")
+	.description("Print quick stats to console")
+	.option("--json", "Output as JSON")
+	.action(async (dir = ".", opts) => {
+		const absDir = path.resolve(dir);
+		const spinner = ora("Analyzing...").start();
+		try {
+			const result = await analyze(absDir);
+			spinner.stop();
+			if (opts.json) {
+				console.log(
+					JSON.stringify(
+						{
+							totalFiles: result.totalFiles,
+							totalLines: result.totalLines,
+							avgComplexity: result.avgComplexity,
+							issues: result.issues.length,
+							errors: result.issues.filter((i) => i.severity === "error")
+								.length,
+							warnings: result.issues.filter((i) => i.severity === "warning")
+								.length,
+						},
+						null,
+						2,
+					),
+				);
+			} else {
+				printStats(result, absDir);
+			}
+		} catch (err) {
+			spinner.fail("Failed");
+			console.error(err);
+		}
+	});
 
 program
-  .command('explain [topic]')
-  .description('Explain what a detected issue means and how to fix it')
-  .action((topic?: string) => {
-    const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
-    const isWin = process.platform === 'win32';
-    const sym = {
-      bullet: isWin ? '*' : '•',
-      cross: isWin ? 'x' : '✗',
-      check: isWin ? 'v' : '✓',
-      line: isWin ? '-' : '─'
-    };
-
-    if (!topic) {
-      console.log('\n' + chalk.bold.cyan('  CodePulse — Available Topics'));
-      console.log(chalk.gray(sym.line.repeat(30)) + '\n');
-      for (const key of topics) {
-        const e = EXPLANATIONS[key];
-        console.log(`  ${chalk.cyan(key)}`);
-        console.log(`    ${chalk.gray(e.short)}\n`);
-      }
-      console.log(chalk.gray(`  Usage: ${chalk.white('codepulse explain <topic>')}\n`));
-      return;
-    }
-
-    const key = topic.toLowerCase() as ExplainKey;
-    const entry = EXPLANATIONS[key];
-
-    if (!entry) {
-      console.log(chalk.red(`\n  Unknown topic: "${topic}"`));
-      console.log(chalk.gray(`  Available: ${topics.join(', ')}\n`));
-      process.exit(1);
-    }
-
-    const { full } = entry;
-
-    console.log('\n' + chalk.bold.cyan(sym.line.repeat(52)));
-    console.log(chalk.bold.white(`  ${key.toUpperCase().replace(/-/g, ' ')}`));
-    console.log(chalk.cyan(sym.line.repeat(52)) + '\n');
-
-    console.log(`  ${chalk.white(full.description)}\n`);
-
-    console.log(chalk.bold.yellow('  Detected when:'));
-    for (const c of full.criteria) {
-      console.log(`    ${chalk.gray(sym.bullet)} ${c}`);
-    }
-
-    console.log('\n' + chalk.bold.red('  Risks:'));
-    for (const r of full.risks) {
-      console.log(`    ${chalk.red(sym.cross)} ${r}`);
-    }
-
-    console.log('\n' + chalk.bold.green('  Recommended fixes:'));
-    for (const f of full.fix) {
-      console.log(`    ${chalk.green(sym.check)} ${f}`);
-    }
-
-    console.log('\n' + chalk.gray(sym.line.repeat(52)) + '\n');
-  });
+	.command("dead [dir]")
+	.description("Show unused exports")
+	.option("--json", "Output as JSON")
+	.action(async (dir = ".", opts) => {
+		const absDir = path.resolve(dir);
+		const spinner = ora("Detecting dead code...").start();
+		try {
+			const result = await analyze(absDir);
+			spinner.stop();
+			if (opts.json) {
+				const dead = result.issues.filter((i) => i.type === "dead-export");
+				console.log(JSON.stringify(dead, null, 2));
+			} else {
+				printDeadCode(result);
+			}
+		} catch (err) {
+			spinner.fail("Failed");
+			console.error(err);
+		}
+	});
 
 program
-  .command('plugins [dir]')
-  .description('List all available plugins with metadata')
-  .option('--json', 'Output as JSON')
-  .action(async (dir = '.', opts) => {
-    const absDir = path.resolve(dir);
-    try {
-      const plugins = await listPlugins(absDir);
-      
-      if (opts.json) {
-        console.log(JSON.stringify(plugins, null, 2));
-      } else {
-        if (plugins.length === 0) {
-          console.log(chalk.yellow('\n  No plugins found.\n'));
-          return;
-        }
+	.command("graph [dir]")
+	.description("Generate only the dependency graph SVG")
+	.action(async (dir = ".") => {
+		const absDir = path.resolve(dir);
+		const spinner = ora("Building graph...").start();
+		try {
+			const result = await analyze(absDir);
+			const reportPath = generateReport(result, absDir);
+			spinner.succeed(chalk.green("Graph saved!"));
+			console.log(`  ${chalk.cyan(path.join(reportPath, "graph.svg"))}\n`);
+		} catch (err) {
+			spinner.fail("Failed");
+			console.error(err);
+		}
+	});
 
-        console.log(chalk.bold('\n  📦 Loaded Plugins\n  ' + '─'.repeat(50)));
-        
-        for (const plugin of plugins) {
-          const statusIcon = plugin.enabled ? chalk.green('●') : chalk.gray('○');
-          console.log(`\n  ${statusIcon} ${chalk.cyan(plugin.name)} ${chalk.gray(`v${plugin.version}`)}`);
-          console.log(`    ${chalk.white(plugin.description)}`);
-          console.log(`    ${chalk.gray(`Category: ${plugin.category} | Author: ${plugin.author} | File: ${plugin.file}`)}`);
-        }
-        console.log('');
-      }
-    } catch (err) {
-      console.error(chalk.red('Failed to list plugins:'), err);
-      process.exit(1);
-    }
-  });
+program
+	.command("badge [dir]")
+	.description("Generate a quality badge SVG")
+	.action(async (dir = ".") => {
+		const absDir = path.resolve(dir);
+		try {
+			const result = await analyze(absDir);
+			const healthStats = {
+				vulnerabilities: result.issues.filter((i) => i.type === "vulnerability")
+					.length,
+				deadExports: result.deadExports.length,
+				godFiles: result.godFiles.length,
+				criticalFiles: result.criticalFiles.length,
+				hotspots: result.hotspots,
+				avgComplexity: result.avgComplexity,
+			};
+			const score = calculateHealthScore(healthStats, result);
+			const badgeSvg = generateBadge(result, score);
+			const badgePath = saveBadge(badgeSvg, absDir);
+			console.log(chalk.green(`\n  ✓ Badge generated: ${badgePath}`));
+			console.log(chalk.gray(`    Score: ${score}/100\n`));
+		} catch (err) {
+			console.error(chalk.red("Failed to generate badge"), err);
+		}
+	});
+
+program
+	.command("explain [topic]")
+	.description("Explain what a detected issue means and how to fix it")
+	.action((topic?: string) => {
+		const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
+		const isWin = process.platform === "win32";
+		const sym = {
+			bullet: isWin ? "*" : "•",
+			cross: isWin ? "x" : "✗",
+			check: isWin ? "v" : "✓",
+			line: isWin ? "-" : "─",
+		};
+
+		if (!topic) {
+			console.log(`\n${chalk.bold.cyan("  CodePulse — Available Topics")}`);
+			console.log(`${chalk.gray(sym.line.repeat(30))}\n`);
+			for (const key of topics) {
+				const e = EXPLANATIONS[key];
+				console.log(`  ${chalk.cyan(key)}`);
+				console.log(`    ${chalk.gray(e.short)}\n`);
+			}
+			console.log(
+				chalk.gray(`  Usage: ${chalk.white("codepulse explain <topic>")}\n`),
+			);
+			return;
+		}
+
+		const key = topic.toLowerCase() as ExplainKey;
+		const entry = EXPLANATIONS[key];
+
+		if (!entry) {
+			console.log(chalk.red(`\n  Unknown topic: "${topic}"`));
+			console.log(chalk.gray(`  Available: ${topics.join(", ")}\n`));
+			process.exit(1);
+		}
+
+		const { full } = entry;
+
+		console.log(`\n${chalk.bold.cyan(sym.line.repeat(52))}`);
+		console.log(chalk.bold.white(`  ${key.toUpperCase().replace(/-/g, " ")}`));
+		console.log(`${chalk.cyan(sym.line.repeat(52))}\n`);
+
+		console.log(`  ${chalk.white(full.description)}\n`);
+
+		console.log(chalk.bold.yellow("  Detected when:"));
+		for (const c of full.criteria) {
+			console.log(`    ${chalk.gray(sym.bullet)} ${c}`);
+		}
+
+		console.log(`\n${chalk.bold.red("  Risks:")}`);
+		for (const r of full.risks) {
+			console.log(`    ${chalk.red(sym.cross)} ${r}`);
+		}
+
+		console.log(`\n${chalk.bold.green("  Recommended fixes:")}`);
+		for (const f of full.fix) {
+			console.log(`    ${chalk.green(sym.check)} ${f}`);
+		}
+
+		console.log(`\n${chalk.gray(sym.line.repeat(52))}\n`);
+	});
+
+program
+	.command("plugins [dir]")
+	.description("List all available plugins with metadata")
+	.option("--json", "Output as JSON")
+	.action(async (dir = ".", opts) => {
+		const absDir = path.resolve(dir);
+		try {
+			const plugins = await listPlugins(absDir);
+
+			if (opts.json) {
+				console.log(JSON.stringify(plugins, null, 2));
+			} else {
+				if (plugins.length === 0) {
+					console.log(chalk.yellow("\n  No plugins found.\n"));
+					return;
+				}
+
+				console.log(chalk.bold(`\n  📦 Loaded Plugins\n  ${"─".repeat(50)}`));
+
+				for (const plugin of plugins) {
+					const statusIcon = plugin.enabled
+						? chalk.green("●")
+						: chalk.gray("○");
+					console.log(
+						`\n  ${statusIcon} ${chalk.cyan(plugin.name)} ${chalk.gray(`v${plugin.version}`)}`,
+					);
+					console.log(`    ${chalk.white(plugin.description)}`);
+					console.log(
+						`    ${chalk.gray(`Category: ${plugin.category} | Author: ${plugin.author} | File: ${plugin.file}`)}`,
+					);
+				}
+				console.log("");
+			}
+		} catch (err) {
+			console.error(chalk.red("Failed to list plugins:"), err);
+			process.exit(1);
+		}
+	});
 
 program.parse(process.argv);

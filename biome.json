@@ -1,0 +1,26 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+	"files": {
+		"includes": [
+			"**",
+			"!**/dist",
+			"!**/node_modules",
+			"!**/build",
+			"!**/.codepulse-report",
+			"!**/coverage"
+		]
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noAssignInExpressions": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off"
+			}
+		}
+	}
+}

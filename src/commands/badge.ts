@@ -1,13 +1,13 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { AnalysisResult } from '../types';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { AnalysisResult } from "../types/index";
 
-export function generateBadge(result: AnalysisResult, score: number): string {
-  const color = score > 90 ? '#10B981' : score > 70 ? '#F59E0B' : '#EF4444';
-  const label = 'CodePulse';
-  const value = `${score}/100`;
+export function generateBadge(_result: AnalysisResult, score: number): string {
+	const color = score > 90 ? "#10B981" : score > 70 ? "#F59E0B" : "#EF4444";
+	const label = "CodePulse";
+	const value = `${score}/100`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="130" height="20">
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="130" height="20">
     <linearGradient id="b" x2="0" y2="100%">
       <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
       <stop offset="1" stop-opacity=".1"/>
@@ -30,7 +30,7 @@ export function generateBadge(result: AnalysisResult, score: number): string {
 }
 
 export function saveBadge(svg: string, dir: string): string {
-  const outputPath = path.join(dir, '.codepulse-report', 'badge.svg');
-  fs.writeFileSync(outputPath, svg);
-  return outputPath;
+	const outputPath = path.join(dir, ".codepulse-report", "badge.svg");
+	fs.writeFileSync(outputPath, svg);
+	return outputPath;
 }

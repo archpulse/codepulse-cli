@@ -1,10 +1,10 @@
-import chalk from 'chalk';
-import * as fs from 'fs';
-import * as path from 'path';
-import { t } from '../utils/i18n';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import chalk from "chalk";
+import { t } from "../utils/i18n";
 
 const LICENSES: Record<string, string> = {
-  mit: `MIT License
+	mit: `MIT License
 
 Copyright (c) {YEAR} {NAME}
 
@@ -25,7 +25,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`,
-  isc: `ISC License
+	isc: `ISC License
 
 Copyright (c) {YEAR}, {NAME}
 
@@ -41,7 +41,7 @@ OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE 
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE 
 OR PERFORMANCE OF THIS SOFTWARE.`,
-  'bsd-2': `BSD 2-Clause License
+	"bsd-2": `BSD 2-Clause License
 
 Copyright (c) {YEAR}, {NAME}
 All rights reserved.
@@ -66,7 +66,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`,
-  'bsd-3': `BSD 3-Clause License
+	"bsd-3": `BSD 3-Clause License
 
 Copyright (c) {YEAR}, {NAME}
 All rights reserved.
@@ -95,7 +95,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`,
-  unlicense: `This is free and unencumbered software released into the public domain.
+	unlicense: `This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
 distribute this software, either in source code form or as a compiled
@@ -119,7 +119,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org/>`,
-  apache: `Apache License Version 2.0, January 2004
+	apache: `Apache License Version 2.0, January 2004
 http://www.apache.org/licenses/
 
 Copyright {YEAR} {NAME}
@@ -135,61 +135,71 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.`,
-  gpl: `GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+	gpl: `GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 Copyright (C) {YEAR} {NAME}
 Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
 ... (Full GPLv3 text usually included here, abbreviated for CLI size)`,
-  agpl: `GNU AFFERO GENERAL PUBLIC LICENSE Version 3, 19 November 2007
+	agpl: `GNU AFFERO GENERAL PUBLIC LICENSE Version 3, 19 November 2007
 Copyright (C) {YEAR} {NAME}
 ... (Full AGPLv3 text abbreviated)`,
-  lgpl: `GNU LESSER GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+	lgpl: `GNU LESSER GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 Copyright (C) {YEAR} {NAME}
 ... (Full LGPLv3 text abbreviated)`,
-  mpl: `Mozilla Public License Version 2.0
-... (Full MPL 2.0 text abbreviated)`
+	mpl: `Mozilla Public License Version 2.0
+... (Full MPL 2.0 text abbreviated)`,
 };
 
 const LICENSE_DESC_KEYS: Record<string, string> = {
-  mit: 'license.desc.mit',
-  isc: 'license.desc.isc',
-  'bsd-2': 'license.desc.bsd2',
-  'bsd-3': 'license.desc.bsd3',
-  unlicense: 'license.desc.unlicense',
-  apache: 'license.desc.apache',
-  mpl: 'license.desc.mpl',
-  gpl: 'license.desc.gpl',
-  agpl: 'license.desc.agpl',
-  lgpl: 'license.desc.lgpl'
+	mit: "license.desc.mit",
+	isc: "license.desc.isc",
+	"bsd-2": "license.desc.bsd2",
+	"bsd-3": "license.desc.bsd3",
+	unlicense: "license.desc.unlicense",
+	apache: "license.desc.apache",
+	mpl: "license.desc.mpl",
+	gpl: "license.desc.gpl",
+	agpl: "license.desc.agpl",
+	lgpl: "license.desc.lgpl",
 };
 
-export function runLicense(type: string, name: string = 'Your Name'): void {
-  const isWin = process.platform === 'win32';
-  const check = isWin ? 'v' : '✓';
-  
-  if (type === 'help') {
-    console.log('\n' + chalk.bold.cyan(`  ${t('license.supported')}`));
-    console.log(chalk.gray('  ─────────────────────────────'));
-    Object.keys(LICENSES).forEach(key => {
-      const desc = t(LICENSE_DESC_KEYS[key] || '');
-      console.log(`  - ${chalk.yellow(key.padEnd(10))} ${chalk.gray('—')} ${chalk.white(desc)}`);
-    });
-    console.log(chalk.gray(`\n  ${t('license.usage')}\n`));
-    return;
-  }
+export function runLicense(type: string, name: string = "Your Name"): void {
+	const isWin = process.platform === "win32";
+	const check = isWin ? "v" : "✓";
 
-  const licenseBody = LICENSES[type.toLowerCase()];
-  if (!licenseBody) {
-    console.error(chalk.red(`\n  ${t('license.unknown', { type })}`));
-    console.log(chalk.gray(`  ${t('license.available', { list: Object.keys(LICENSES).join(', ') })}\n`));
-    process.exit(1);
-  }
+	if (type === "help") {
+		console.log(`\n${chalk.bold.cyan(`  ${t("license.supported")}`)}`);
+		console.log(chalk.gray("  ─────────────────────────────"));
+		Object.keys(LICENSES).forEach((key) => {
+			const desc = t(LICENSE_DESC_KEYS[key] || "");
+			console.log(
+				`  - ${chalk.yellow(key.padEnd(10))} ${chalk.gray("—")} ${chalk.white(desc)}`,
+			);
+		});
+		console.log(chalk.gray(`\n  ${t("license.usage")}\n`));
+		return;
+	}
 
-  const finalLicense = licenseBody
-    .replace('{YEAR}', new Date().getFullYear().toString())
-    .replace('{NAME}', name);
+	const licenseBody = LICENSES[type.toLowerCase()];
+	if (!licenseBody) {
+		console.error(chalk.red(`\n  ${t("license.unknown", { type })}`));
+		console.log(
+			chalk.gray(
+				`  ${t("license.available", { list: Object.keys(LICENSES).join(", ") })}\n`,
+			),
+		);
+		process.exit(1);
+	}
 
-  const dest = path.join(process.cwd(), 'LICENSE');
-  fs.writeFileSync(dest, finalLicense);
+	const finalLicense = licenseBody
+		.replace("{YEAR}", new Date().getFullYear().toString())
+		.replace("{NAME}", name);
 
-  console.log(chalk.green(`\n  ${check} ${t('license.success', { type: type.toUpperCase() })}`));
+	const dest = path.join(process.cwd(), "LICENSE");
+	fs.writeFileSync(dest, finalLicense);
+
+	console.log(
+		chalk.green(
+			`\n  ${check} ${t("license.success", { type: type.toUpperCase() })}`,
+		),
+	);
 }
