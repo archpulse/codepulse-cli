@@ -51,11 +51,20 @@ const explain_1 = require("./explain");
 const mcp_setup_1 = require("./mcp-setup");
 const mcp_1 = require("./commands/mcp");
 const scan_1 = require("./commands/scan");
-const program = new commander_1.Command();
-// Read package.json for version and name
+const license_1 = require("./commands/license");
+const i18n_1 = require("./utils/i18n");
 const pkgPath = path.resolve(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const isWin = process.platform === 'win32';
+// Manually check for --lang flag before commander parses
+const langIndex = process.argv.indexOf('--lang');
+if (langIndex !== -1 && process.argv[langIndex + 1]) {
+    (0, i18n_1.setLocale)(process.argv[langIndex + 1]);
+}
+const program = new commander_1.Command();
+// Global option for language (keep for documentation)
+program
+    .option('--lang <locale>', 'Set language (en, ua, cs, ko, ru, de, fr)', 'en');
 // Check for updates
 const notifier = (0, update_notifier_1.default)({
     pkg,
@@ -75,7 +84,7 @@ if ((0, mcp_setup_1.shouldRunMcpSetup)()) {
 }
 program
     .name('codepulse')
-    .description('Deep code analysis for JS/TS/Python and more')
+    .description((0, i18n_1.t)('cli.description'))
     .version(pkg.version);
 program.configureHelp({
     subcommandTerm: (cmd) => chalk_1.default.cyan(cmd.name()),
@@ -93,11 +102,16 @@ ${chalk_1.default.bold.blue('| |__| (_) | (_| |  __/  __/| |_| | \\__ \\  __/   
 ${chalk_1.default.bold.blue(' \\____\\___/ \\__,_|\\___|_|    \\__,_|_|___/\\___|     ')}
 `);
 program.addHelpText('after', `
-${chalk_1.default.bold('Examples:')}
+${chalk_1.default.bold((0, i18n_1.t)('cli.examples'))}
   ${chalk_1.default.gray('$')} codepulse scan .
   ${chalk_1.default.gray('$')} codepulse stats src --json
   ${chalk_1.default.gray('$')} codepulse explain complexity
+  ${chalk_1.default.gray('$')} codepulse license mit "John Doe"
 `);
+program
+    .command('license <type> [name]')
+    .description('Generate a license file (mit, apache, gpl)')
+    .action(license_1.runLicense);
 program
     .command('mcp')
     .description('Start the Model Context Protocol (MCP) server for AI agents')

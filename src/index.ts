@@ -14,14 +14,25 @@ import { EXPLANATIONS, ExplainKey } from './explain';
 import { shouldRunMcpSetup, setupMcpConfigs } from './mcp-setup';
 import { runMcpServer } from './commands/mcp';
 import { runScan } from './commands/scan';
+import { runLicense } from './commands/license';
+import { setLocale, t, Locale } from './utils/i18n';
 
-const program = new Command();
-
-// Read package.json for version and name
 const pkgPath = path.resolve(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
 const isWin = process.platform === 'win32';
+
+// Manually check for --lang flag before commander parses
+const langIndex = process.argv.indexOf('--lang');
+if (langIndex !== -1 && process.argv[langIndex + 1]) {
+  setLocale(process.argv[langIndex + 1] as Locale);
+}
+
+const program = new Command();
+
+// Global option for language (keep for documentation)
+program
+  .option('--lang <locale>', 'Set language (en, ua, cs, ko, ru, de, fr)', 'en');
 
 // Check for updates
 const notifier = updateNotifier({ 
@@ -45,7 +56,7 @@ if (shouldRunMcpSetup()) {
 
 program
   .name('codepulse')
-  .description('Deep code analysis for JS/TS/Python and more')
+  .description(t('cli.description'))
   .version(pkg.version);
 
 program.configureHelp({
@@ -66,11 +77,17 @@ ${chalk.bold.blue(' \\____\\___/ \\__,_|\\___|_|    \\__,_|_|___/\\___|     ')}
 `);
 
 program.addHelpText('after', `
-${chalk.bold('Examples:')}
+${chalk.bold(t('cli.examples'))}
   ${chalk.gray('$')} codepulse scan .
   ${chalk.gray('$')} codepulse stats src --json
   ${chalk.gray('$')} codepulse explain complexity
+  ${chalk.gray('$')} codepulse license mit "John Doe"
 `);
+
+program
+  .command('license <type> [name]')
+  .description('Generate a license file (mit, apache, gpl)')
+  .action(runLicense);
 
 program
   .command('mcp')

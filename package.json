@@ -12,7 +12,7 @@
     "codepulse": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/locales dist/",
     "dev": "ts-node src/cli/index.ts",
     "test": "vitest run",
     "prepublishOnly": "npm run build"

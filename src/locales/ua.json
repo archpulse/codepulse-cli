@@ -1,0 +1,19 @@
+{
+  "license.supported": "CodePulse — Підтримувані ліцензії",
+  "license.usage": "Використання: codepulse license <type> \"Name\"",
+  "license.success": "Успішно згенеровано ліцензію {type} у поточній директорії.",
+  "license.unknown": "Невідомий тип ліцензії: \"{type}\"",
+  "license.available": "Доступні: {list}",
+  "license.desc.mit": "стандартна MIT",
+  "license.desc.isc": "ще простіша, ніж MIT",
+  "license.desc.bsd2": "BSD 2-Clause",
+  "license.desc.bsd3": "BSD 3-Clause",
+  "license.desc.unlicense": "Суспільне надбання (Public Domain)",
+  "license.desc.apache": "Apache 2.0",
+  "license.desc.mpl": "Mozilla Public License 2.0",
+  "license.desc.gpl": "GNU GPL v3",
+  "license.desc.agpl": "GNU Affero GPL v3",
+  "license.desc.lgpl": "GNU Lesser GPL v3",
+  "cli.description": "Глибокий аналіз структури коду для JS/TS, Python та інших мов",
+  "cli.examples": "Приклади:"
+}

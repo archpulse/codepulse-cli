@@ -1,0 +1,19 @@
+{
+  "license.supported": "CodePulse — Supported Licenses",
+  "license.usage": "Usage: codepulse license <type> \"Name\"",
+  "license.success": "Successfully generated {type} license in current directory.",
+  "license.unknown": "Unknown license type: \"{type}\"",
+  "license.available": "Available: {list}",
+  "license.desc.mit": "standard MIT",
+  "license.desc.isc": "even simpler than MIT",
+  "license.desc.bsd2": "BSD 2-Clause",
+  "license.desc.bsd3": "BSD 3-Clause",
+  "license.desc.unlicense": "Public Domain",
+  "license.desc.apache": "Apache 2.0",
+  "license.desc.mpl": "Mozilla Public License 2.0",
+  "license.desc.gpl": "GNU GPL v3",
+  "license.desc.agpl": "GNU Affero GPL v3",
+  "license.desc.lgpl": "GNU Lesser GPL v3",
+  "cli.description": "Deep code analysis for JS/TS/Python and more",
+  "cli.examples": "Examples:"
+}

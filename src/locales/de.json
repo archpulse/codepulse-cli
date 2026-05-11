@@ -1,0 +1,19 @@
+{
+  "license.supported": "CodePulse — Unterstützte Lizenzen",
+  "license.usage": "Verwendung: codepulse license <type> \"Name\"",
+  "license.success": "{type}-Lizenz erfolgreich im aktuellen Verzeichnis erstellt.",
+  "license.unknown": "Unbekannter Lizenztyp: \"{type}\"",
+  "license.available": "Verfügbar: {list}",
+  "license.desc.mit": "Standard MIT",
+  "license.desc.isc": "noch einfacher als MIT",
+  "license.desc.bsd2": "BSD 2-Clause",
+  "license.desc.bsd3": "BSD 3-Clause",
+  "license.desc.unlicense": "Gemeinfrei (Public Domain)",
+  "license.desc.apache": "Apache 2.0",
+  "license.desc.mpl": "Mozilla Public License 2.0",
+  "license.desc.gpl": "GNU GPL v3",
+  "license.desc.agpl": "GNU Affero GPL v3",
+  "license.desc.lgpl": "GNU Lesser GPL v3",
+  "cli.description": "Tiefe Codestrukturanalyse für JS/TS, Python und mehr",
+  "cli.examples": "Beispiele:"
+}
