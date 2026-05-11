@@ -2,13 +2,13 @@
 
 > JS/TS 프로젝트를 위한 고급 정적 분석 및 보안 스캐닝. 취약점 탐지, 핫스팟 식별 및 코드 상태 시각화.
 
-[![CodePulse Health](https://img.shields.io/badge/CodePulse-Healthy-brightgreen)](https://github.com/archpulse/codepulse-cli)
+[![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ### 🌍 언어
-[English](./README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
+[English](../../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
 
 ---
 

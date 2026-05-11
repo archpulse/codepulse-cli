@@ -2,14 +2,14 @@
 
 > Advanced static analysis and security scanning for JS/TS projects. Find vulnerabilities, detect hotspots, and visualize code health.
 
-[![CodePulse Health](https://img.shields.io/badge/CodePulse-Healthy-brightgreen)](https://github.com/archpulse/codepulse-cli)
+![CodePulse Health](./badge.svg)
 [![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ### 🌍 Languages / Мови / Языки
-[English](./README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
+[English](./README.md) | [Українська](./docs/locales/README.ua.md) | [Русский](./docs/locales/README.ru.md) | [Čeština](./docs/locales/README.cs.md) | [한국어](./docs/locales/README.ko.md) | [Deutsch](./docs/locales/README.de.md) | [Français](./docs/locales/README.fr.md)
 
 ---
 

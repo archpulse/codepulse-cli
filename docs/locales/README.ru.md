@@ -2,13 +2,13 @@
 
 > Глубокий статический анализ и сканирование безопасности для JS/TS проектов. Поиск уязвимостей, горячих точек и визуализация здоровья кода.
 
-[![CodePulse Health](https://img.shields.io/badge/CodePulse-Healthy-brightgreen)](https://github.com/archpulse/codepulse-cli)
+[![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ### 🌍 Языки
-[English](./README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
+[English](../../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
 
 ---
 
