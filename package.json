@@ -6,6 +6,7 @@
     "url": "git+https://github.com/archpulse/codepulse-cli.git"
   },
   "description": "Deep code structure analysis for large JS/TS and Python projects",
+  "license": "MIT",
   "main": "dist/index.js",
   "bin": {
     "codepulse": "./dist/index.js"
@@ -17,6 +18,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@archpulse/codepulse": "^2.0.3",
     "@babel/parser": "^7.23.0",
     "@babel/traverse": "^7.23.0",
     "@babel/types": "^7.23.0",

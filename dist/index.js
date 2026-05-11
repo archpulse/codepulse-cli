@@ -57,11 +57,14 @@ const pkgPath = path.resolve(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const isWin = process.platform === 'win32';
 // Check for updates
-(0, update_notifier_1.default)({
+const notifier = (0, update_notifier_1.default)({
     pkg,
-    updateCheckInterval: 1000 * 60 * 60, // 1 hour
+    updateCheckInterval: 0, // Check every time for debugging
     distTag: 'latest'
-}).notify({ isGlobal: true });
+});
+if (notifier.update && notifier.update.latest !== pkg.version) {
+    notifier.notify({ isGlobal: true, defer: false });
+}
 // Auto-configure MCP on first run
 if ((0, mcp_setup_1.shouldRunMcpSetup)()) {
     const count = (0, mcp_setup_1.setupMcpConfigs)();
