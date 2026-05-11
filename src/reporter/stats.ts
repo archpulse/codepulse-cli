@@ -83,7 +83,7 @@ export function calculateHealthScore(
 	score -= Math.min(20, stats.hotspots.length * 5);
 	score -= Math.min(15, stats.deadExports * 2);
 	score -= Math.min(15, stats.godFiles * 8);
-	score -= Math.min(10, stats.criticalFiles * 3);
+	score -= Math.min(10, stats.criticalFiles * 2);
 
 	// Complexity impact
 	score -= Math.min(25, Math.max(0, stats.avgComplexity - 4) * 3);

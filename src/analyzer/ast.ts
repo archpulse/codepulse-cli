@@ -5,7 +5,6 @@ import * as t from "@babel/types";
 import type { FileNode, FunctionNode } from "../types/index";
 import { analyzeGenericFile } from "./generic";
 import { analyzePythonFile } from "./python";
-import { countLines, readFile } from "./scanner";
 import { createFileNode, initializeFileAnalysis } from "./utils";
 
 const JS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);

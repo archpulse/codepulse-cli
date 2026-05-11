@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { AnalysisResult } from "../types/index";
+import { buildStats } from "./stats";
 import { buildGraphSvg } from "./svg";
 import { buildHtml } from "./template";
-import { buildStats } from "./stats";
 
 const REPORT_DIR = ".codepulse-report";
 

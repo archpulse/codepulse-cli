@@ -4,8 +4,8 @@ import chalk from "chalk";
 import ora from "ora";
 import { analyze } from "../analyzer";
 import { generateReport } from "../reporter/html";
-import { calculateHealthScore } from "../reporter/stats";
 import { generateSarif } from "../reporter/sarif";
+import { calculateHealthScore } from "../reporter/stats";
 
 import type { Issue, IssueSeverity } from "../types/index";
 import { generateBadge, saveBadge } from "./badge";

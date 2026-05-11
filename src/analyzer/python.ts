@@ -1,6 +1,4 @@
-import * as path from "node:path";
-import type { FileNode, FunctionNode } from "../types/index";
-import { countLines, readFile } from "./scanner";
+import type { FileNode } from "../types/index";
 import { createFileNode, initializeFileAnalysis } from "./utils";
 
 export function analyzePythonFile(
