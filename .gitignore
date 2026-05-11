@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+/app/node_modules/
+
+# Build outputs
+dist/
+build/
+/app/dist/
+/app/.vite/
+
+# CodePulse Reports
+.codepulse-report/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Misc
+.DS_Store
+coverage/
+.cache/
+.npm/
+
+# TypeScript
+tsconfig.tsbuildinfo
