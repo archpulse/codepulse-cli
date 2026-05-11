@@ -31,6 +31,9 @@ function loadConfig(dir: string, options: { strict?: boolean }): ProjectConfig {
 
 function processFiles(filePaths: string[], dir: string, churnMap: Map<string, number>, config: ProjectConfig): FileNode[] {
   const files: FileNode[] = [];
+  let processed = 0;
+  const total = filePaths.length;
+
   for (const filePath of filePaths) {
     try {
       const result = analyzeFile(filePath, dir);
@@ -44,7 +47,12 @@ function processFiles(filePaths: string[], dir: string, churnMap: Map<string, nu
     } catch (err) {
       // Skip problematic files
     }
+    processed++;
+    if (processed % 10 === 0 || processed === total) {
+      process.stdout.write(`\r  Analyzing files: ${processed}/${total}...`);
+    }
   }
+  process.stdout.write('\n');
   return files;
 }
 

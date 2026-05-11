@@ -1,6 +1,6 @@
 {
   "totalFiles": 31,
-  "totalLines": 3072,
+  "totalLines": 3128,
   "avgComplexity": 2.5,
   "deadExports": 0,
   "godFiles": 0,
@@ -12,140 +12,140 @@
       "name": "src/analyzer/ast.ts",
       "value": 178,
       "complexity": 3.9,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/generic.ts",
       "value": 146,
       "complexity": 7.7,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/git.ts",
       "value": 41,
       "complexity": 2.2,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/analyzer/graph.ts",
       "value": 158,
       "complexity": 4.8,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/index.ts",
-      "value": 97,
-      "complexity": 2.8,
-      "churn": 1,
+      "value": 105,
+      "complexity": 3,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/python.ts",
       "value": 92,
       "complexity": 5.3,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/scanner.ts",
       "value": 82,
       "complexity": 2.8,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/analyzer/utils.ts",
       "value": 33,
       "complexity": 2,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/commands/badge.ts",
       "value": 37,
       "complexity": 2,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/commands/mcp.ts",
       "value": 94,
       "complexity": 3,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/commands/output.ts",
-      "value": 91,
+      "value": 104,
       "complexity": 3.2,
-      "churn": 1,
+      "churn": 3,
       "isGod": false
     },
     {
       "name": "src/commands/scan.ts",
       "value": 200,
       "complexity": 4.4,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/explain.ts",
       "value": 157,
       "complexity": 1,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "src/index.ts",
-      "value": 228,
-      "complexity": 2.3,
-      "churn": 2,
+      "value": 263,
+      "complexity": 2.1,
+      "churn": 4,
       "isGod": false
     },
     {
       "name": "src/mcp-setup.ts",
       "value": 139,
       "complexity": 7,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/reporter/html.ts",
       "value": 96,
       "complexity": 1.3,
-      "churn": 2,
+      "churn": 3,
       "isGod": false
     },
     {
       "name": "src/reporter/sarif.ts",
       "value": 48,
       "complexity": 3,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/reporter/svg.ts",
       "value": 80,
       "complexity": 3.1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/reporter/template-parts.ts",
       "value": 216,
       "complexity": 1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/reporter/template.ts",
       "value": 351,
       "complexity": 3,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
@@ -173,7 +173,7 @@
       "name": "src/rules/duplication.rule.ts",
       "value": 55,
       "complexity": 1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
@@ -187,7 +187,7 @@
       "name": "src/rules/index.ts",
       "value": 36,
       "complexity": 2.7,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
@@ -201,28 +201,28 @@
       "name": "src/rules/sca.rule.ts",
       "value": 65,
       "complexity": 1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/rules/vulnerability.rule.ts",
       "value": 106,
       "complexity": 1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     },
     {
       "name": "src/types.ts",
       "value": 107,
       "complexity": 1,
-      "churn": 1,
+      "churn": 2,
       "isGod": false
     },
     {
       "name": "vitest.config.ts",
       "value": 9,
       "complexity": 1,
-      "churn": 0,
+      "churn": 1,
       "isGod": false
     }
   ],
@@ -260,7 +260,7 @@
     {
       "path": "src/commands/output.ts",
       "complexity": 3.2,
-      "lines": 91
+      "lines": 104
     },
     {
       "path": "src/reporter/svg.ts",
@@ -268,14 +268,14 @@
       "lines": 80
     },
     {
+      "path": "src/analyzer/index.ts",
+      "complexity": 3,
+      "lines": 105
+    },
+    {
       "path": "src/commands/mcp.ts",
       "complexity": 3,
       "lines": 94
-    },
-    {
-      "path": "src/reporter/sarif.ts",
-      "complexity": 3,
-      "lines": 48
     }
   ],
   "deadExportsList": [],
@@ -319,7 +319,7 @@
         "id": "/home/user/codepulse-cli/src/analyzer/index.ts",
         "name": "index.ts",
         "fullPath": "src/analyzer/index.ts",
-        "complexity": 2.8,
+        "complexity": 3,
         "isCritical": false,
         "isGod": false
       },
@@ -391,7 +391,7 @@
         "id": "/home/user/codepulse-cli/src/index.ts",
         "name": "index.ts",
         "fullPath": "src/index.ts",
-        "complexity": 2.3,
+        "complexity": 2.1,
         "isCritical": false,
         "isGod": false
       },
