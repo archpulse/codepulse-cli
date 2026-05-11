@@ -3,6 +3,7 @@
 > Hloubková statická analýza a skenování bezpečnosti pro projekty JS/TS. Hledání zranitelností, detekce hotspotů a vizualizace zdraví kódu.
 
 [![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
+[![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---

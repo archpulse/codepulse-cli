@@ -3,6 +3,7 @@
 > Erweiterte statische Analyse und Sicherheitsscan für JS/TS-Projekte. Finden Sie Schwachstellen, erkennen Sie Hotspots und visualisieren Sie die Code-Integrität.
 
 [![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
+[![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---

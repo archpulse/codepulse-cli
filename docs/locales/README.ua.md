@@ -3,6 +3,7 @@
 > Глибокий статичний аналіз та сканування безпеки для JS/TS проектів. Пошук вразливостей, гарячих точок та візуалізація здоров'я коду.
 
 [![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
+[![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
