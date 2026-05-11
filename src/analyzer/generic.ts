@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { FileNode, FunctionNode } from '../types';
 import { readFile, countLines } from './scanner';
+import { createFileNode } from './utils';
 
 const GOD_FILE_LINES = 500;
 const GOD_FILE_IMPORTS = 15;
@@ -77,7 +78,7 @@ export function analyzeGenericFile(filePath: string, baseDir: string): FileNode 
   const exports: string[] = [];
   const functions: FunctionNode[] = [];
 
-  // Extract imports
+
   for (const pattern of config.importPatterns) {
     const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
     let m: RegExpExecArray | null;
@@ -86,7 +87,7 @@ export function analyzeGenericFile(filePath: string, baseDir: string): FileNode 
     }
   }
 
-  // Extract exports
+
   for (const pattern of config.exportPatterns) {
     const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
     let m: RegExpExecArray | null;
@@ -95,7 +96,7 @@ export function analyzeGenericFile(filePath: string, baseDir: string): FileNode 
     }
   }
 
-  // Extract functions with line numbers
+
   const lineOffsets = buildLineOffsets(content);
   for (const pattern of config.funcPatterns) {
     const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
@@ -114,22 +115,15 @@ export function analyzeGenericFile(filePath: string, baseDir: string): FileNode 
     }
   }
 
-  // File-level complexity
+
   const complexityMatches = content.match(config.complexityKeywords);
   const fileComplexity = 1 + (complexityMatches?.length ?? 0);
 
-  const isGodFile = lines >= GOD_FILE_LINES || imports.length >= GOD_FILE_IMPORTS;
-
-  return {
-    path: filePath,
-    relativePath,
-    lines,
-    imports,
-    exports,
-    functions,
-    complexity: fileComplexity,
-    isGodFile,
-  };
+  // We override the complexity calculation here since generic.ts relies on regex matching, 
+  // not per-function reduction.
+  const fileNode = createFileNode(filePath, relativePath, lines, imports, exports, functions);
+  fileNode.complexity = fileComplexity;
+  return fileNode;
 }
 
 function buildLineOffsets(content: string): number[] {

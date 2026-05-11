@@ -34,6 +34,19 @@ export function printStats(result: AnalysisResult, dir: string): void {
     console.log(`  ${chalk.green('✓')} Critical nodes:  ${chalk.green('none')}`);
   }
 
+  if (result.hotspots.length > 0) {
+    console.log(`  ${chalk.magenta('🔥')} Hotspots:        ${chalk.magenta(result.hotspots.length)}`);
+  } else {
+    console.log(`  ${chalk.green('✓')} Hotspots:        ${chalk.green('none')}`);
+  }
+
+  const vulnerabilities = result.issues.filter(i => i.type === 'vulnerability');
+  if (vulnerabilities.length > 0) {
+    console.log(`  ${chalk.red('☢')} Vulnerabilities: ${chalk.red.bold(vulnerabilities.length)}`);
+  } else {
+    console.log(`  ${chalk.green('✓')} Vulnerabilities: ${chalk.green('none')}`);
+  }
+
   console.log('\n' + chalk.cyan('━'.repeat(52)) + '\n');
 }
 

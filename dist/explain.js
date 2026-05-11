@@ -1,5 +1,4 @@
 "use strict";
-// src/explain.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EXPLANATIONS = void 0;
 exports.EXPLANATIONS = {
@@ -82,6 +81,68 @@ exports.EXPLANATIONS = {
                 'Extract nested conditions into named functions',
                 'Use early returns to reduce nesting',
                 'Replace complex conditionals with lookup tables or strategy pattern',
+            ],
+        },
+    },
+    'vulnerability': {
+        short: 'Critical security issue like hardcoded secrets or code injection.',
+        hint: 'Must be fixed immediately to prevent security breaches.',
+        full: {
+            description: 'A vulnerability is a flaw that could be exploited by an attacker.',
+            criteria: [
+                'Hardcoded passwords or secrets',
+                'Use of dangerous functions like eval()',
+                'Potential code injection points',
+            ],
+            risks: [
+                'Data breaches and unauthorized access',
+                'Remote code execution (RCE)',
+                'Compromised application state',
+            ],
+            fix: [
+                'Use environment variables for secrets (.env)',
+                'Use safe APIs instead of eval()',
+                'Implement proper input validation and sanitization',
+            ],
+        },
+    },
+    'duplication': {
+        short: 'Identical code blocks detected in different files.',
+        hint: 'Violates DRY (Don\'t Repeat Yourself) principle. Harder to fix bugs globally.',
+        full: {
+            description: 'Code duplication occurs when the same or very similar logic exists in multiple places.',
+            criteria: [
+                '15+ lines of identical code (configurable)',
+            ],
+            risks: [
+                'Bug fixes must be applied multiple times',
+                'Inconsistent behavior if one copy is updated but not the others',
+                'Increases codebase size and cognitive load',
+            ],
+            fix: [
+                'Extract shared logic into a common utility function or class',
+                'Use composition or inheritance where appropriate',
+                'Centralize configuration and constants',
+            ],
+        },
+    },
+    'dependency-vulnerability': {
+        short: 'Project uses a library with known security flaws.',
+        hint: 'Check package.json and run npm audit fix.',
+        full: {
+            description: 'Software Composition Analysis (SCA) detected libraries with public CVEs.',
+            criteria: [
+                'Dependency version matches known vulnerable range',
+            ],
+            risks: [
+                'Application is vulnerable even if your own code is perfect',
+                'Data breaches, XSS, or DoS through third-party code',
+                'Compliance failures',
+            ],
+            fix: [
+                'Upgrade the dependency to the suggested secure version',
+                'If no fix exists, look for alternative libraries',
+                'Use a lockfile to ensure reproducible and safe builds',
             ],
         },
     },

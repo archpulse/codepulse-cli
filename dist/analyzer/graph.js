@@ -36,46 +36,58 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildGraph = buildGraph;
 exports.detectDeadExports = detectDeadExports;
 const path = __importStar(require("path"));
-function buildGraph(files, baseDir) {
-    const filePathSet = new Set(files.map(f => f.path));
-    // Build a map: module name → file path (for Python-style imports)
+const fs = __importStar(require("fs"));
+function createModuleMap(files) {
     const moduleNameMap = new Map();
     for (const file of files) {
-        // e.g. "commands" → "/project/commands.py"
         const noExt = path.basename(file.path, path.extname(file.path));
         const rel = file.relativePath.replace(/\\/g, '/');
-        // store both basename and relative path without extension
         moduleNameMap.set(noExt, file.path);
         const relNoExt = rel.replace(/\.[^.]+$/, '');
         moduleNameMap.set(relNoExt, file.path);
-        // also store directory __init__ style: "core.utils" → "core/utils.py"
-        moduleNameMap.set(relNoExt.replace(/\//g, '.'), file.path);
     }
-    const edges = [];
-    const seen = new Set();
-    for (const file of files) {
-        const ext = path.extname(file.path);
-        const isPython = ext === '.py';
-        for (const imp of file.imports) {
-            let resolved = null;
-            if (imp.startsWith('.')) {
-                // Relative import (JS/TS or Python relative)
-                resolved = resolveRelative(file.path, imp, filePathSet, isPython);
-            }
-            else if (isPython) {
-                // Python absolute import: try matching by module name
-                resolved = resolvePythonAbsolute(imp, moduleNameMap);
-            }
-            if (resolved && resolved !== file.path) {
-                const key = `${file.path}→${resolved}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    edges.push({ from: file.path, to: resolved });
-                }
+    return moduleNameMap;
+}
+function processFileImports(file, isPython, filePathSet, moduleNameMap, baseDir, seenEdges, edges) {
+    for (const imp of file.imports) {
+        let resolved = null;
+        if (imp.startsWith('.') || imp.startsWith('@/')) {
+            resolved = resolveRelative(file.path, imp, filePathSet, isPython, baseDir);
+        }
+        else if (isPython) {
+            resolved = resolvePythonAbsolute(imp, moduleNameMap);
+        }
+        if (resolved && resolved !== file.path) {
+            const key = `${file.path}→${resolved}`;
+            if (!seenEdges.has(key)) {
+                seenEdges.add(key);
+                edges.push({ from: file.path, to: resolved });
             }
         }
     }
-    // Build graph nodes
+}
+function calculateCentrality(graph) {
+    let maxCentrality = 0;
+    for (const node of graph.values()) {
+        node.centrality = node.inDegree * node.outDegree + node.inDegree;
+        if (node.centrality > maxCentrality)
+            maxCentrality = node.centrality;
+    }
+    const criticalThreshold = Math.max(3, maxCentrality * 0.6);
+    for (const node of graph.values()) {
+        node.isCritical = node.centrality >= criticalThreshold || node.inDegree >= 5;
+    }
+}
+function buildGraph(files, baseDir) {
+    const filePathSet = new Set(files.map(f => f.path));
+    const moduleNameMap = createModuleMap(files);
+    const edges = [];
+    const seenEdges = new Set();
+    for (const file of files) {
+        const ext = path.extname(file.path);
+        const isPython = ext === '.py';
+        processFileImports(file, isPython, filePathSet, moduleNameMap, baseDir, seenEdges, edges);
+    }
     const graph = new Map();
     for (const file of files) {
         graph.set(file.path, {
@@ -94,42 +106,43 @@ function buildGraph(files, baseDir) {
         if (to)
             to.inDegree++;
     }
-    let maxCentrality = 0;
-    for (const node of graph.values()) {
-        node.centrality = node.inDegree * node.outDegree + node.inDegree;
-        if (node.centrality > maxCentrality)
-            maxCentrality = node.centrality;
-    }
-    const criticalThreshold = Math.max(3, maxCentrality * 0.6);
-    for (const node of graph.values()) {
-        node.isCritical = node.centrality >= criticalThreshold || node.inDegree >= 5;
-    }
+    calculateCentrality(graph);
     return { edges, graph };
 }
-function resolveRelative(fromFile, importPath, filePathSet, isPython) {
-    const dir = path.dirname(fromFile);
+function resolveRelative(fromFile, importPath, filePathSet, isPython, baseDir) {
     const extensions = isPython
         ? ['.py', '']
         : ['.ts', '.tsx', '.js', '.jsx', ''];
-    const base = path.resolve(dir, importPath);
+    let resolvedBase;
+    if (importPath.startsWith('@/')) {
+        // Handle @/ alias common in Vite/Next.js
+        const appSrc = path.join(baseDir, 'app', 'src');
+        const rootSrc = path.join(baseDir, 'src');
+        const searchBase = fs.existsSync(appSrc) ? appSrc : (fs.existsSync(rootSrc) ? rootSrc : baseDir);
+        resolvedBase = path.resolve(searchBase, importPath.slice(2));
+    }
+    else if (importPath.startsWith('.')) {
+        const dir = path.dirname(fromFile);
+        resolvedBase = path.resolve(dir, importPath);
+    }
+    else {
+        return null;
+    }
     for (const ext of extensions) {
-        if (filePathSet.has(base + ext))
-            return base + ext;
-        const idx = path.join(base, '__init__' + ext);
+        if (filePathSet.has(resolvedBase + ext))
+            return resolvedBase + ext;
+        const idx = path.join(resolvedBase, '__init__' + ext);
         if (filePathSet.has(idx))
             return idx;
-        const index = path.join(base, 'index' + ext);
+        const index = path.join(resolvedBase, 'index' + ext);
         if (filePathSet.has(index))
             return index;
     }
     return null;
 }
 function resolvePythonAbsolute(importStr, moduleNameMap) {
-    // "from commands import X" → importStr = "commands"
-    // "from core.utils import X" → importStr = "core.utils"
     if (moduleNameMap.has(importStr))
         return moduleNameMap.get(importStr);
-    // Try first component: "from os.path import X" → skip stdlib
     const firstPart = importStr.split('.')[0];
     if (moduleNameMap.has(firstPart))
         return moduleNameMap.get(firstPart);

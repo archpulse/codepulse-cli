@@ -3,6 +3,9 @@ import { DeadExportRule } from './deadExport.rule';
 import { ComplexityRule } from './complexity.rule';
 import { GodFileRule } from './godFile.rule';
 import { CriticalNodeRule } from './criticalNode.rule';
+import { VulnerabilityRule } from './vulnerability.rule';
+import { SCARule } from './sca.rule';
+import { DuplicationRule } from './duplication.rule';
 
 export interface RunOptions {
   strict?: boolean;
@@ -11,14 +14,17 @@ export interface RunOptions {
 export function runRules(context: AnalysisContext, opts: RunOptions = {}): Issue[] {
   const rules = [
     new DeadExportRule(),
-    new ComplexityRule(opts.strict ? 15 : 20),
+    new ComplexityRule(context.config.maxComplexity || (opts.strict ? 10 : 20)),
     new GodFileRule(),
     new CriticalNodeRule(),
+    new VulnerabilityRule(),
+    new SCARule(),
+    new DuplicationRule(),
   ];
 
   let issues = rules.flatMap(rule => rule.run(context));
 
-  // Strict mode: escalate warnings to errors
+
   if (opts.strict) {
     issues = issues.map(i =>
       i.severity === 'warning' ? { ...i, severity: 'error' as IssueSeverity } : i

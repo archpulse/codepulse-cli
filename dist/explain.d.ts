@@ -39,5 +39,35 @@ export declare const EXPLANATIONS: {
             readonly fix: readonly ["Extract nested conditions into named functions", "Use early returns to reduce nesting", "Replace complex conditionals with lookup tables or strategy pattern"];
         };
     };
+    readonly vulnerability: {
+        readonly short: "Critical security issue like hardcoded secrets or code injection.";
+        readonly hint: "Must be fixed immediately to prevent security breaches.";
+        readonly full: {
+            readonly description: "A vulnerability is a flaw that could be exploited by an attacker.";
+            readonly criteria: readonly ["Hardcoded passwords or secrets", "Use of dangerous functions like eval()", "Potential code injection points"];
+            readonly risks: readonly ["Data breaches and unauthorized access", "Remote code execution (RCE)", "Compromised application state"];
+            readonly fix: readonly ["Use environment variables for secrets (.env)", "Use safe APIs instead of eval()", "Implement proper input validation and sanitization"];
+        };
+    };
+    readonly duplication: {
+        readonly short: "Identical code blocks detected in different files.";
+        readonly hint: "Violates DRY (Don't Repeat Yourself) principle. Harder to fix bugs globally.";
+        readonly full: {
+            readonly description: "Code duplication occurs when the same or very similar logic exists in multiple places.";
+            readonly criteria: readonly ["15+ lines of identical code (configurable)"];
+            readonly risks: readonly ["Bug fixes must be applied multiple times", "Inconsistent behavior if one copy is updated but not the others", "Increases codebase size and cognitive load"];
+            readonly fix: readonly ["Extract shared logic into a common utility function or class", "Use composition or inheritance where appropriate", "Centralize configuration and constants"];
+        };
+    };
+    readonly 'dependency-vulnerability': {
+        readonly short: "Project uses a library with known security flaws.";
+        readonly hint: "Check package.json and run npm audit fix.";
+        readonly full: {
+            readonly description: "Software Composition Analysis (SCA) detected libraries with public CVEs.";
+            readonly criteria: readonly ["Dependency version matches known vulnerable range"];
+            readonly risks: readonly ["Application is vulnerable even if your own code is perfect", "Data breaches, XSS, or DoS through third-party code", "Compliance failures"];
+            readonly fix: readonly ["Upgrade the dependency to the suggested secure version", "If no fix exists, look for alternative libraries", "Use a lockfile to ensure reproducible and safe builds"];
+        };
+    };
 };
 export type ExplainKey = keyof typeof EXPLANATIONS;

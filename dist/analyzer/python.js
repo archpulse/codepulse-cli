@@ -36,8 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzePythonFile = analyzePythonFile;
 const path = __importStar(require("path"));
 const scanner_1 = require("./scanner");
-const GOD_FILE_LINES = 500;
-const GOD_FILE_IMPORTS = 15;
+const utils_1 = require("./utils");
 function analyzePythonFile(filePath, baseDir) {
     const content = (0, scanner_1.readFile)(filePath);
     if (!content)
@@ -48,24 +47,29 @@ function analyzePythonFile(filePath, baseDir) {
     const exports = [];
     const functions = [];
     const lineArr = content.split('\n');
-    // Collect imports: "import x", "from x import y"
+    // Improved import regex
     const importRe = /^(?:from\s+([\w.]+)\s+import|import\s+([\w.,\s]+))/;
-    for (const line of lineArr) {
-        const m = line.trim().match(importRe);
-        if (m)
-            imports.push(m[1] ?? m[2].split(',')[0].trim());
-    }
-    // Collect functions and classes (top-level = exported in Python sense)
     const defRe = /^(def|async def|class)\s+(\w+)\s*[(:]/;
     for (let i = 0; i < lineArr.length; i++) {
         const line = lineArr[i];
-        const m = line.match(defRe);
-        if (m) {
-            const name = m[2];
+        const trimmed = line.trim();
+        // Skip comments and empty lines
+        if (trimmed.startsWith('#') || !trimmed)
+            continue;
+        // Imports
+        const mImport = line.match(importRe);
+        if (mImport) {
+            const imp = mImport[1] ?? mImport[2].split(',')[0].trim();
+            if (imp)
+                imports.push(imp);
+        }
+        // Functions/Classes
+        const mDef = line.match(defRe);
+        if (mDef) {
+            const name = mDef[2];
             const isTopLevel = !line.startsWith(' ') && !line.startsWith('\t');
             if (isTopLevel)
                 exports.push(name);
-            // Calculate complexity for this block
             const blockLines = extractBlock(lineArr, i);
             const complexity = calcPythonComplexity(blockLines);
             functions.push({
@@ -75,31 +79,21 @@ function analyzePythonFile(filePath, baseDir) {
                 complexity,
                 isExported: isTopLevel,
             });
+            // Skip the rest of the block to avoid double counting nested functions for file complexity
+            // but we still want to detect them if they are top-level. 
+            // Actually, for simple line-by-line, we just continue.
         }
     }
-    const fileComplexity = functions.reduce((sum, fn) => sum + fn.complexity, 1);
-    const isGodFile = lines >= GOD_FILE_LINES || imports.length >= GOD_FILE_IMPORTS;
-    return {
-        path: filePath,
-        relativePath,
-        lines,
-        imports,
-        exports,
-        functions,
-        complexity: fileComplexity,
-        isGodFile,
-    };
+    return (0, utils_1.createFileNode)(filePath, relativePath, lines, imports, exports, functions);
 }
 function extractBlock(lines, startIdx) {
     const block = [lines[startIdx]];
     const baseIndent = getIndent(lines[startIdx]);
     for (let i = startIdx + 1; i < lines.length; i++) {
         const line = lines[i];
-        if (line.trim() === '') {
-            block.push(line);
-            continue;
-        }
-        if (getIndent(line) <= baseIndent && line.trim() !== '')
+        if (line.trim() === '')
+            continue; // Ignore empty lines in block detection
+        if (getIndent(line) <= baseIndent)
             break;
         block.push(line);
     }
@@ -107,14 +101,15 @@ function extractBlock(lines, startIdx) {
 }
 function getIndent(line) {
     const m = line.match(/^(\s*)/);
-    return m ? m[1].length : 0;
+    return m ? m[1].replace(/\t/g, '    ').length : 0;
 }
 function calcPythonComplexity(lines) {
     let complexity = 1;
-    const keywords = /\b(if|elif|else|for|while|except|with|and|or)\b/g;
+    // Keywords that increase cyclomatic complexity
+    const keywords = /\b(if|elif|for|while|except|with|and|or)\b/g;
     for (const line of lines) {
-        const stripped = line.trim();
-        if (stripped.startsWith('#'))
+        const stripped = line.split('#')[0].trim(); // Remove comments
+        if (!stripped)
             continue;
         const matches = stripped.match(keywords);
         if (matches)

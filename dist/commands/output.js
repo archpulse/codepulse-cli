@@ -70,6 +70,19 @@ function printStats(result, dir) {
     else {
         console.log(`  ${chalk_1.default.green('✓')} Critical nodes:  ${chalk_1.default.green('none')}`);
     }
+    if (result.hotspots.length > 0) {
+        console.log(`  ${chalk_1.default.magenta('🔥')} Hotspots:        ${chalk_1.default.magenta(result.hotspots.length)}`);
+    }
+    else {
+        console.log(`  ${chalk_1.default.green('✓')} Hotspots:        ${chalk_1.default.green('none')}`);
+    }
+    const vulnerabilities = result.issues.filter(i => i.type === 'vulnerability');
+    if (vulnerabilities.length > 0) {
+        console.log(`  ${chalk_1.default.red('☢')} Vulnerabilities: ${chalk_1.default.red.bold(vulnerabilities.length)}`);
+    }
+    else {
+        console.log(`  ${chalk_1.default.green('✓')} Vulnerabilities: ${chalk_1.default.green('none')}`);
+    }
     console.log('\n' + chalk_1.default.cyan('━'.repeat(52)) + '\n');
 }
 function printDeadCode(result) {

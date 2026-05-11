@@ -1,0 +1,429 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodePulse",
+          "version": "1.0.3",
+          "informationUri": "https://github.com/codepulse-cli",
+          "rules": [
+            {
+              "id": "dead-export",
+              "name": "DeadExport",
+              "shortDescription": {
+                "text": "Unused exported symbol"
+              }
+            },
+            {
+              "id": "high-complexity",
+              "name": "HighComplexity",
+              "shortDescription": {
+                "text": "Function is too complex"
+              }
+            },
+            {
+              "id": "god-file",
+              "name": "GodFile",
+              "shortDescription": {
+                "text": "File is too large or has too many imports"
+              }
+            },
+            {
+              "id": "critical-node",
+              "name": "CriticalNode",
+              "shortDescription": {
+                "text": "Highly depended-upon module"
+              }
+            },
+            {
+              "id": "vulnerability",
+              "name": "Vulnerability",
+              "shortDescription": {
+                "text": "Security vulnerability"
+              }
+            },
+            {
+              "id": "duplication",
+              "name": "Duplication",
+              "shortDescription": {
+                "text": "Duplicate code detected"
+              }
+            },
+            {
+              "id": "dependency-vulnerability",
+              "name": "DependencyVulnerability",
+              "shortDescription": {
+                "text": "Vulnerable dependency in package.json"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "dead-export",
+          "level": "warning",
+          "message": {
+            "text": "Export \"printStats\" is never imported by any other file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "output.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "dead-export",
+          "level": "warning",
+          "message": {
+            "text": "Export \"printDeadCode\" is never imported by any other file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "output.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "dead-export",
+          "level": "warning",
+          "message": {
+            "text": "Export \"printGodFiles\" is never imported by any other file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "output.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "dead-export",
+          "level": "warning",
+          "message": {
+            "text": "Export \"printCriticalNodes\" is never imported by any other file."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "output.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "error",
+          "message": {
+            "text": "Function \"analyzeFile\" has cyclomatic complexity of 36."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/ast.ts"
+                },
+                "region": {
+                  "startLine": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "error",
+          "message": {
+            "text": "Function \"calculateComplexity\" has cyclomatic complexity of 22."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/ast.ts"
+                },
+                "region": {
+                  "startLine": 153
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "error",
+          "message": {
+            "text": "Function \"visit\" has cyclomatic complexity of 22."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/ast.ts"
+                },
+                "region": {
+                  "startLine": 156
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"analyzeGenericFile\" has cyclomatic complexity of 18."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/generic.ts"
+                },
+                "region": {
+                  "startLine": 66
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"buildGraph\" has cyclomatic complexity of 17."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/graph.ts"
+                },
+                "region": {
+                  "startLine": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"analyze\" has cyclomatic complexity of 13."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/index.ts"
+                },
+                "region": {
+                  "startLine": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"scanFiles\" has cyclomatic complexity of 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/scanner.ts"
+                },
+                "region": {
+                  "startLine": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"anonymous\" has cyclomatic complexity of 20."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/index.ts"
+                },
+                "region": {
+                  "startLine": 35
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"printGrouped\" has cyclomatic complexity of 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/index.ts"
+                },
+                "region": {
+                  "startLine": 305
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"buildGraphSvg\" has cyclomatic complexity of 12."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/reporter/html.ts"
+                },
+                "region": {
+                  "startLine": 59
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "high-complexity",
+          "level": "warning",
+          "message": {
+            "text": "Function \"buildHtml\" has cyclomatic complexity of 20."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/reporter/html.ts"
+                },
+                "region": {
+                  "startLine": 175
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "god-file",
+          "level": "warning",
+          "message": {
+            "text": "File is a god file (549 lines)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/reporter/html.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "critical-node",
+          "level": "error",
+          "message": {
+            "text": "Critical module — imported by 19 files, centrality score 19."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/types.ts"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "duplication",
+          "level": "warning",
+          "message": {
+            "text": "Identical code block (15 lines) found."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/analyzer/python.ts"
+                },
+                "region": {
+                  "startLine": 49
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "duplication",
+          "level": "warning",
+          "message": {
+            "text": "Identical code block (15 lines) found."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/commands/output.ts"
+                },
+                "region": {
+                  "startLine": 9
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

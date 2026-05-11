@@ -42,21 +42,85 @@ const chalk_1 = __importDefault(require("chalk"));
 const ora_1 = __importDefault(require("ora"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
+const update_notifier_1 = __importDefault(require("update-notifier"));
 const analyzer_1 = require("./analyzer");
 const html_1 = require("./reporter/html");
+const badge_1 = require("./commands/badge");
 const output_1 = require("./commands/output");
 const explain_1 = require("./explain");
+const mcp_setup_1 = require("./mcp-setup");
+const mcp_1 = require("./commands/mcp");
+const scan_1 = require("./commands/scan");
 const program = new commander_1.Command();
+// Read package.json for version and name
+const pkgPath = path.resolve(__dirname, '../package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+// Check for updates
+(0, update_notifier_1.default)({
+    pkg,
+    updateCheckInterval: 1000 * 60 * 60 * 24 // 1 day
+}).notify();
+// Auto-configure MCP on first run
+if ((0, mcp_setup_1.shouldRunMcpSetup)()) {
+    const count = (0, mcp_setup_1.setupMcpConfigs)();
+    if (count > 0) {
+        console.log(chalk_1.default.green(`\n  ✓ Automatically configured CodePulse as an MCP server for ${count} AI agent(s) on your PC!\n`));
+    }
+}
 program
     .name('codepulse')
     .description('Deep code analysis for JS/TS/Python and more')
-    .version('1.0.0');
-// ─── codepulse scan ───────────────────────────────────────────
+    .version(pkg.version);
+program.configureHelp({
+    subcommandTerm: (cmd) => chalk_1.default.cyan(cmd.name()),
+    subcommandDescription: (cmd) => chalk_1.default.gray(cmd.description()),
+    optionTerm: (option) => chalk_1.default.yellow(option.flags),
+    optionDescription: (option) => chalk_1.default.gray(option.description),
+    commandUsage: (command) => chalk_1.default.magenta(command.name() + ' ' + command.usage()),
+    commandDescription: (command) => chalk_1.default.italic(command.description()),
+});
+program.addHelpText('before', `
+${chalk_1.default.bold.blue('  ____           _      ____       _               ')}
+${chalk_1.default.bold.blue(' / ___|___   __| | ___|  _ \\ _   _| |___  ___      ')}
+${chalk_1.default.bold.blue('| |   / _ \\ / _` |/ _ \\ |_) | | | | / __|/ _ \\     ')}
+${chalk_1.default.bold.blue('| |__| (_) | (_| |  __/  __/| |_| | \\__ \\  __/     ')}
+${chalk_1.default.bold.blue(' \\____\\___/ \\__,_|\\___|_|    \\__,_|_|___/\\___|     ')}
+`);
+program.addHelpText('after', `
+${chalk_1.default.bold('Examples:')}
+  ${chalk_1.default.gray('$')} codepulse scan .
+  ${chalk_1.default.gray('$')} codepulse stats src --json
+  ${chalk_1.default.gray('$')} codepulse explain complexity
+`);
+program
+    .command('mcp')
+    .description('Start the Model Context Protocol (MCP) server for AI agents')
+    .action(async () => {
+    try {
+        await (0, mcp_1.runMcpServer)();
+    }
+    catch (err) {
+        console.error(chalk_1.default.red('MCP Server failed to start:'), err);
+        process.exit(1);
+    }
+});
+program
+    .command('setup-mcp')
+    .description('Manually trigger automatic MCP configuration for AI agents')
+    .action(() => {
+    const count = (0, mcp_setup_1.setupMcpConfigs)();
+    if (count > 0) {
+        console.log(chalk_1.default.green(`\n  ✓ Successfully configured CodePulse as an MCP server for ${count} AI agent(s)!\n`));
+    }
+    else {
+        console.log(chalk_1.default.yellow('\n  ! No supported AI agent configurations found on this system.\n'));
+    }
+});
 program
     .command('scan [dir]')
     .description('Analyze project and generate full HTML report')
-    .option('--pro', 'Enable Pro mode (no file limit)')
     .option('--open', 'Open report in browser after generation')
+    .option('--sarif', 'Generate SARIF report for CI/CD')
     .option('-d, --debug', 'Show detailed issues list')
     .option('--json', 'Output issues as JSON (CI-friendly)')
     .option('--focus <type>', 'Filter by issue type (dead-export|high-complexity|god-file|critical-node)')
@@ -65,80 +129,7 @@ program
     .option('--fail-on <level>', 'Exit with code 1 if issues of this severity exist')
     .option('--group-by <field>', 'Group output by field (file|type|severity)')
     .option('--strict', 'Strict mode: treat warnings as errors, lower thresholds')
-    .action(async (dir = '.', opts) => {
-    const absDir = path.resolve(dir);
-    if (!fs.existsSync(absDir)) {
-        console.error(chalk_1.default.red(`Directory not found: ${absDir}`));
-        process.exit(1);
-    }
-    if (opts.json) {
-        try {
-            const result = await (0, analyzer_1.analyze)(absDir, { pro: opts.pro, strict: opts.strict });
-            let issues = filterIssues(result.issues, opts);
-            console.log(JSON.stringify(issues, null, 2));
-            exitWithCode(issues, opts);
-        }
-        catch (err) {
-            console.error(JSON.stringify({ error: String(err) }));
-            process.exit(1);
-        }
-        return;
-    }
-    console.log('\n' + chalk_1.default.bold.cyan('  ◆ CodePulse CLI'));
-    console.log(chalk_1.default.gray(`  Scanning ${absDir}\n`));
-    const spinner = (0, ora_1.default)({ text: 'Scanning files...', color: 'cyan' }).start();
-    try {
-        const result = await (0, analyzer_1.analyze)(absDir, { pro: opts.pro, strict: opts.strict });
-        spinner.text = 'Generating report...';
-        const reportPath = (0, html_1.generateReport)(result, absDir);
-        spinner.succeed(chalk_1.default.green('Analysis complete!'));
-        console.log(`\n  ${chalk_1.default.bold('Report:')} ${chalk_1.default.cyan(path.join(reportPath, 'index.html'))}`);
-        (0, output_1.printStats)(result, absDir);
-        let issues = filterIssues(result.issues, opts);
-        const errors = issues.filter(i => i.severity === 'error').length;
-        const warnings = issues.filter(i => i.severity === 'warning').length;
-        // Active filters summary
-        const filters = [];
-        if (opts.focus)
-            filters.push(`focus: ${opts.focus}`);
-        if (opts.severity)
-            filters.push(`severity: ${opts.severity}`);
-        if (opts.maxIssues)
-            filters.push(`max: ${opts.maxIssues}`);
-        if (opts.strict)
-            filters.push('strict mode');
-        if (filters.length)
-            console.log(chalk_1.default.gray(`  Filters: ${filters.join('  ')}`));
-        console.log(`  ${chalk_1.default.bold('Issues:')} ${chalk_1.default.red(errors + ' errors')}  ${chalk_1.default.yellow(warnings + ' warnings')}  ${chalk_1.default.gray('(' + issues.length + ' total)')}\n`);
-        if (opts.debug || opts.focus || opts.severity) {
-            if (opts.groupBy) {
-                printGrouped(issues, opts.groupBy);
-            }
-            else {
-                printIssues(issues);
-            }
-        }
-        if (!opts.pro && result.totalFiles >= 200) {
-            console.log(chalk_1.default.yellow('  ⚡ Free tier: scanned 200 files.'));
-            console.log(chalk_1.default.gray('     Upgrade to Pro: codepulse.dev/pro\n'));
-        }
-        if (opts.open) {
-            const { exec } = require('child_process');
-            const reportFile = path.join(reportPath, 'index.html');
-            const openCmd = process.platform === 'win32' ? `start ${reportFile}`
-                : process.platform === 'darwin' ? `open ${reportFile}`
-                    : `xdg-open ${reportFile}`;
-            exec(openCmd);
-        }
-        exitWithCode(issues, opts);
-    }
-    catch (err) {
-        spinner.fail(chalk_1.default.red('Analysis failed'));
-        console.error(err);
-        process.exit(1);
-    }
-});
-// ─── codepulse stats ──────────────────────────────────────────
+    .action(scan_1.runScan);
 program
     .command('stats [dir]')
     .description('Print quick stats to console')
@@ -168,7 +159,6 @@ program
         console.error(err);
     }
 });
-// ─── codepulse dead ───────────────────────────────────────────
 program
     .command('dead [dir]')
     .description('Show unused exports')
@@ -192,7 +182,6 @@ program
         console.error(err);
     }
 });
-// ─── codepulse graph ─────────────────────────────────────────
 program
     .command('graph [dir]')
     .description('Generate only the dependency graph SVG')
@@ -210,7 +199,31 @@ program
         console.error(err);
     }
 });
-// ─── codepulse explain ───────────────────────────────────────
+program
+    .command('badge [dir]')
+    .description('Generate a quality badge SVG')
+    .action(async (dir = '.') => {
+    const absDir = path.resolve(dir);
+    try {
+        const result = await (0, analyzer_1.analyze)(absDir);
+        const healthStats = {
+            vulnerabilities: result.issues.filter(i => i.type === 'vulnerability').length,
+            deadExports: result.deadExports.length,
+            godFiles: result.godFiles.length,
+            criticalFiles: result.criticalFiles.length,
+            hotspots: result.hotspots,
+            avgComplexity: result.avgComplexity
+        };
+        const score = (0, html_1.calculateHealthScore)(healthStats, result);
+        const badgeSvg = (0, badge_1.generateBadge)(result, score);
+        const badgePath = (0, badge_1.saveBadge)(badgeSvg, absDir);
+        console.log(chalk_1.default.green(`\n  ✓ Badge generated: ${badgePath}`));
+        console.log(chalk_1.default.gray(`    Score: ${score}/100\n`));
+    }
+    catch (err) {
+        console.error(chalk_1.default.red('Failed to generate badge'), err);
+    }
+});
 program
     .command('explain [topic]')
     .description('Explain what a detected issue means and how to fix it')
@@ -253,125 +266,5 @@ program
     }
     console.log('\n' + chalk_1.default.gray('─'.repeat(52)) + '\n');
 });
-// ─── codepulse activate ───────────────────────────────────────
-program
-    .command('activate <key>')
-    .description('Activate a Pro or Team license key')
-    .action((key) => {
-    const { activateLicense } = require('./utils/license');
-    const result = activateLicense(key);
-    if (result.success) {
-        console.log(chalk_1.default.green('\n  ✓ ' + result.message));
-        console.log(chalk_1.default.gray(`  Tier: ${result.tier.toUpperCase()}\n`));
-    }
-    else {
-        console.log(chalk_1.default.red('\n  ✗ ' + result.message + '\n'));
-        process.exit(1);
-    }
-});
-// ─── codepulse license ───────────────────────────────────────
-program
-    .command('license')
-    .description('Show current license status')
-    .action(() => {
-    const { getLicense, getDeviceId } = require('./utils/license');
-    const license = getLicense();
-    const deviceId = getDeviceId();
-    console.log('\n' + chalk_1.default.bold.cyan('  CodePulse License'));
-    console.log(chalk_1.default.gray('  ─────────────────────────────'));
-    console.log(`  Device ID: ${chalk_1.default.cyan(deviceId)}`);
-    if (license) {
-        console.log(`  Tier:      ${chalk_1.default.green(license.tier.toUpperCase())}`);
-        console.log(`  Key:       ${chalk_1.default.gray(license.key)}`);
-        console.log(`  Activated: ${chalk_1.default.gray(new Date(license.activatedAt).toLocaleDateString())}`);
-    }
-    else {
-        console.log(`  Tier:      ${chalk_1.default.yellow('FREE')} (up to 200 files)`);
-        console.log(chalk_1.default.gray('\n  Upgrade: codepulse.dev/pro\n'));
-    }
-    console.log('');
-});
-// ─── filter / output helpers ─────────────────────────────────
-function filterIssues(issues, opts) {
-    let result = [...issues];
-    if (opts.strict) {
-        result = result.map(i => {
-            if (i.type === 'dead-export' || i.type === 'god-file')
-                return { ...i, severity: 'error' };
-            return i;
-        });
-    }
-    if (opts.focus) {
-        result = result.filter(i => i.type === opts.focus);
-    }
-    if (opts.severity) {
-        result = result.filter(i => i.severity === opts.severity);
-    }
-    if (opts.maxIssues) {
-        result = result.slice(0, Number(opts.maxIssues));
-    }
-    return result;
-}
-function exitWithCode(issues, opts) {
-    const failOn = opts.failOn;
-    if (failOn && issues.some(i => i.severity === failOn)) {
-        process.exit(1);
-    }
-    if (opts.strict && issues.some(i => i.severity === 'error')) {
-        process.exit(1);
-    }
-}
-function printIssues(issues) {
-    if (issues.length === 0) {
-        console.log(chalk_1.default.green('  ✓ No issues found.\n'));
-        return;
-    }
-    console.log(chalk_1.default.bold('\n  Issues\n  ' + '─'.repeat(50)));
-    for (const issue of issues) {
-        const color = severityColor(issue.severity);
-        const line = issue.line ? chalk_1.default.gray(' line ' + issue.line) : '';
-        const sym = issue.symbol ? chalk_1.default.gray('  ❯ ') + chalk_1.default.white(issue.symbol) : '';
-        console.log(`\n  ${color(`[${issue.severity.toUpperCase()}]`)} ${chalk_1.default.bold(issue.type)}` +
-            `\n  ${chalk_1.default.cyan(issue.file)}${line}${sym}` +
-            `\n  ${issue.message}` +
-            (issue.suggestion ? `\n  ${chalk_1.default.gray('→')} ${chalk_1.default.italic(issue.suggestion)}` : ''));
-    }
-    console.log('');
-}
-function printGrouped(issues, groupBy) {
-    if (issues.length === 0) {
-        console.log(chalk_1.default.green('  ✓ No issues found.\n'));
-        return;
-    }
-    const groups = new Map();
-    for (const issue of issues) {
-        const key = groupBy === 'file' ? issue.file
-            : groupBy === 'type' ? issue.type
-                : groupBy === 'severity' ? issue.severity
-                    : issue.file;
-        if (!groups.has(key))
-            groups.set(key, []);
-        groups.get(key).push(issue);
-    }
-    console.log(chalk_1.default.bold(`\n  Issues grouped by ${groupBy}\n  ` + '─'.repeat(50)));
-    for (const [key, groupIssues] of groups) {
-        console.log(`\n  ${chalk_1.default.bold.cyan(key)}`);
-        for (const issue of groupIssues) {
-            const color = severityColor(issue.severity);
-            const line = issue.line ? `:${issue.line}` : '';
-            const sym = issue.symbol ? chalk_1.default.gray(' ❯ ') + issue.symbol : '';
-            console.log(`    ${color(`[${issue.severity.toUpperCase()}]`)} ${issue.type}${line}${sym}` +
-                (issue.suggestion ? `\n    ${chalk_1.default.gray('→')} ${chalk_1.default.italic(issue.suggestion)}` : ''));
-        }
-    }
-    console.log('');
-}
-function severityColor(severity) {
-    if (severity === 'error')
-        return chalk_1.default.red;
-    if (severity === 'warning')
-        return chalk_1.default.yellow;
-    return chalk_1.default.blue;
-}
 program.parse(process.argv);
 //# sourceMappingURL=index.js.map
