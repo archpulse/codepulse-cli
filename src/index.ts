@@ -21,17 +21,21 @@ const program = new Command();
 const pkgPath = path.resolve(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
+const isWin = process.platform === 'win32';
+
 // Check for updates
 updateNotifier({ 
   pkg,
-  updateCheckInterval: 1000 * 60 * 60 * 24 // 1 day
-}).notify();
+  updateCheckInterval: 1000 * 60 * 60, // 1 hour
+  distTag: 'latest'
+}).notify({ isGlobal: true });
 
 // Auto-configure MCP on first run
 if (shouldRunMcpSetup()) {
   const count = setupMcpConfigs();
   if (count > 0) {
-    console.log(chalk.green(`\n  ✓ Automatically configured CodePulse as an MCP server for ${count} AI agent(s) on your PC!\n`));
+    const symbol = isWin ? 'v' : '✓';
+    console.log(chalk.green(`\n  ${symbol} Automatically configured CodePulse as an MCP server for ${count} AI agent(s) on your PC!\n`));
   }
 }
 
@@ -200,10 +204,17 @@ program
   .description('Explain what a detected issue means and how to fix it')
   .action((topic?: string) => {
     const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
+    const isWin = process.platform === 'win32';
+    const sym = {
+      bullet: isWin ? '*' : '•',
+      cross: isWin ? 'x' : '✗',
+      check: isWin ? 'v' : '✓',
+      line: isWin ? '-' : '─'
+    };
 
     if (!topic) {
       console.log('\n' + chalk.bold.cyan('  CodePulse — Available Topics'));
-      console.log(chalk.gray('  ─────────────────────────────\n'));
+      console.log(chalk.gray(sym.line.repeat(30)) + '\n');
       for (const key of topics) {
         const e = EXPLANATIONS[key];
         console.log(`  ${chalk.cyan(key)}`);
@@ -224,28 +235,28 @@ program
 
     const { full } = entry;
 
-    console.log('\n' + chalk.bold.cyan('─'.repeat(52)));
+    console.log('\n' + chalk.bold.cyan(sym.line.repeat(52)));
     console.log(chalk.bold.white(`  ${key.toUpperCase().replace(/-/g, ' ')}`));
-    console.log(chalk.cyan('─'.repeat(52)) + '\n');
+    console.log(chalk.cyan(sym.line.repeat(52)) + '\n');
 
     console.log(`  ${chalk.white(full.description)}\n`);
 
     console.log(chalk.bold.yellow('  Detected when:'));
     for (const c of full.criteria) {
-      console.log(`    ${chalk.gray('•')} ${c}`);
+      console.log(`    ${chalk.gray(sym.bullet)} ${c}`);
     }
 
     console.log('\n' + chalk.bold.red('  Risks:'));
     for (const r of full.risks) {
-      console.log(`    ${chalk.red('✗')} ${r}`);
+      console.log(`    ${chalk.red(sym.cross)} ${r}`);
     }
 
     console.log('\n' + chalk.bold.green('  Recommended fixes:'));
     for (const f of full.fix) {
-      console.log(`    ${chalk.green('✓')} ${f}`);
+      console.log(`    ${chalk.green(sym.check)} ${f}`);
     }
 
-    console.log('\n' + chalk.gray('─'.repeat(52)) + '\n');
+    console.log('\n' + chalk.gray(sym.line.repeat(52)) + '\n');
   });
 
 program.parse(process.argv);

@@ -2,10 +2,23 @@ import chalk from 'chalk';
 import * as path from 'path';
 import { AnalysisResult } from '../types';
 
+const isWin = process.platform === 'win32';
+
+const SYMBOLS = {
+  line: isWin ? '=' : '━',
+  thinLine: isWin ? '-' : '─',
+  check: isWin ? 'v' : '✓',
+  cross: isWin ? 'x' : '✗',
+  warn: isWin ? '!' : '⚠',
+  fire: isWin ? '*' : '🔥',
+  radio: isWin ? '[!]' : '☢',
+  info: isWin ? 'i' : 'ℹ'
+};
+
 export function printStats(result: AnalysisResult, dir: string): void {
-  console.log('\n' + chalk.bold.cyan('━'.repeat(52)));
+  console.log('\n' + chalk.bold.cyan(SYMBOLS.line.repeat(52)));
   console.log(chalk.bold.white('  CodePulse') + chalk.bold.cyan(' CLI') + chalk.gray(' — Project Stats'));
-  console.log(chalk.bold.cyan('━'.repeat(52)));
+  console.log(chalk.bold.cyan(SYMBOLS.line.repeat(52)));
 
   console.log(`\n  ${chalk.gray('Directory:')}    ${chalk.white(path.resolve(dir))}`);
   console.log(`  ${chalk.gray('Files:')}        ${chalk.white(result.totalFiles)}`);
@@ -14,48 +27,48 @@ export function printStats(result: AnalysisResult, dir: string): void {
   console.log(`  ${chalk.gray('Dependencies:')} ${chalk.white(result.edges.length + ' edges')}`);
 
   console.log('\n' + chalk.bold.yellow('  Issues Found'));
-  console.log('  ' + chalk.gray('─'.repeat(30)));
+  console.log('  ' + chalk.gray(SYMBOLS.thinLine.repeat(30)));
 
   if (result.deadExports.length > 0) {
-    console.log(`  ${chalk.red('✗')} Dead exports:    ${chalk.red(result.deadExports.length)}`);
+    console.log(`  ${chalk.red(SYMBOLS.cross)} Dead exports:    ${chalk.red(result.deadExports.length)}`);
   } else {
-    console.log(`  ${chalk.green('✓')} Dead exports:    ${chalk.green('none')}`);
+    console.log(`  ${chalk.green(SYMBOLS.check)} Dead exports:    ${chalk.green('none')}`);
   }
 
   if (result.godFiles.length > 0) {
-    console.log(`  ${chalk.yellow('⚠')} God files:       ${chalk.yellow(result.godFiles.length)}`);
+    console.log(`  ${chalk.yellow(SYMBOLS.warn)} God files:       ${chalk.yellow(result.godFiles.length)}`);
   } else {
-    console.log(`  ${chalk.green('✓')} God files:       ${chalk.green('none')}`);
+    console.log(`  ${chalk.green(SYMBOLS.check)} God files:       ${chalk.green('none')}`);
   }
 
   if (result.criticalFiles.length > 0) {
     console.log(`  ${chalk.red('!')} Critical nodes:  ${chalk.red(result.criticalFiles.length)}`);
   } else {
-    console.log(`  ${chalk.green('✓')} Critical nodes:  ${chalk.green('none')}`);
+    console.log(`  ${chalk.green(SYMBOLS.check)} Critical nodes:  ${chalk.green('none')}`);
   }
 
   if (result.hotspots.length > 0) {
-    console.log(`  ${chalk.magenta('🔥')} Hotspots:        ${chalk.magenta(result.hotspots.length)}`);
+    console.log(`  ${chalk.magenta(SYMBOLS.fire)} Hotspots:        ${chalk.magenta(result.hotspots.length)}`);
   } else {
-    console.log(`  ${chalk.green('✓')} Hotspots:        ${chalk.green('none')}`);
+    console.log(`  ${chalk.green(SYMBOLS.check)} Hotspots:        ${chalk.green('none')}`);
   }
 
   const vulnerabilities = result.issues.filter(i => i.type === 'vulnerability');
   if (vulnerabilities.length > 0) {
-    console.log(`  ${chalk.red('☢')} Vulnerabilities: ${chalk.red.bold(vulnerabilities.length)}`);
+    console.log(`  ${chalk.red(SYMBOLS.radio)} Vulnerabilities: ${chalk.red.bold(vulnerabilities.length)}`);
   } else {
-    console.log(`  ${chalk.green('✓')} Vulnerabilities: ${chalk.green('none')}`);
+    console.log(`  ${chalk.green(SYMBOLS.check)} Vulnerabilities: ${chalk.green('none')}`);
   }
 
-  console.log('\n' + chalk.cyan('━'.repeat(52)) + '\n');
+  console.log('\n' + chalk.cyan(SYMBOLS.line.repeat(52)) + '\n');
 }
 
 export function printDeadCode(result: AnalysisResult): void {
   console.log('\n' + chalk.bold.red('Dead Code — Unused Exports'));
-  console.log(chalk.gray('─'.repeat(50)));
+  console.log(chalk.gray(SYMBOLS.thinLine.repeat(50)));
 
   if (result.deadExports.length === 0) {
-    console.log(chalk.green('  ✓ No dead exports found!'));
+    console.log(chalk.green(`  ${SYMBOLS.check} No dead exports found!`));
     return;
   }
 
@@ -67,10 +80,10 @@ export function printDeadCode(result: AnalysisResult): void {
 
 export function printGodFiles(result: AnalysisResult): void {
   console.log('\n' + chalk.bold.yellow('God Files — Oversized Modules'));
-  console.log(chalk.gray('─'.repeat(50)));
+  console.log(chalk.gray(SYMBOLS.thinLine.repeat(50)));
 
   if (result.godFiles.length === 0) {
-    console.log(chalk.green('  ✓ No god files found!'));
+    console.log(chalk.green(`  ${SYMBOLS.check} No god files found!`));
     return;
   }
 
