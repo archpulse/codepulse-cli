@@ -24,11 +24,15 @@ const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const isWin = process.platform === 'win32';
 
 // Check for updates
-updateNotifier({ 
+const notifier = updateNotifier({ 
   pkg,
-  updateCheckInterval: 1000 * 60 * 60, // 1 hour
+  updateCheckInterval: 0, // Check every time for debugging
   distTag: 'latest'
-}).notify({ isGlobal: true });
+});
+
+if (notifier.update && notifier.update.latest !== pkg.version) {
+  notifier.notify({ isGlobal: true, defer: false });
+}
 
 // Auto-configure MCP on first run
 if (shouldRunMcpSetup()) {

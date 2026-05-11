@@ -64,6 +64,8 @@ function loadConfig(dir, options) {
 }
 function processFiles(filePaths, dir, churnMap, config) {
     const files = [];
+    let processed = 0;
+    const total = filePaths.length;
     for (const filePath of filePaths) {
         try {
             const result = (0, ast_1.analyzeFile)(filePath, dir);
@@ -78,7 +80,12 @@ function processFiles(filePaths, dir, churnMap, config) {
         catch (err) {
             // Skip problematic files
         }
+        processed++;
+        if (processed % 10 === 0 || processed === total) {
+            process.stdout.write(`\r  Analyzing files: ${processed}/${total}...`);
+        }
     }
+    process.stdout.write('\n');
     return files;
 }
 async function analyze(dir, options = {}) {
