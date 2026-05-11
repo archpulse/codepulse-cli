@@ -1,4 +1,5 @@
 import { AnalysisContext, Issue, IssueSeverity } from '../types';
+import { Rule } from './rule';
 import { DeadExportRule } from './deadExport.rule';
 import { ComplexityRule } from './complexity.rule';
 import { GodFileRule } from './godFile.rule';
@@ -11,8 +12,8 @@ export interface RunOptions {
   strict?: boolean;
 }
 
-export function runRules(context: AnalysisContext, opts: RunOptions = {}): Issue[] {
-  const rules = [
+export function runRules(context: AnalysisContext, opts: RunOptions = {}, externalRules: Rule[] = []): Issue[] {
+  const rules: Rule[] = [
     new DeadExportRule(),
     new ComplexityRule(context.config.maxComplexity || (opts.strict ? 10 : 20)),
     new GodFileRule(),
@@ -20,6 +21,7 @@ export function runRules(context: AnalysisContext, opts: RunOptions = {}): Issue
     new VulnerabilityRule(),
     new SCARule(),
     new DuplicationRule(),
+    ...externalRules
   ];
 
   let issues = rules.flatMap(rule => rule.run(context));

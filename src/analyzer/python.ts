@@ -56,7 +56,7 @@ export function analyzePythonFile(filePath: string, baseDir: string): FileNode |
     }
   }
 
-  return createFileNode(filePath, relativePath, lines, imports, exports, functions);
+  return createFileNode(filePath, relativePath, content, lines, imports, exports, functions);
 }
 
 function extractBlock(lines: string[], startIdx: number): string[] {

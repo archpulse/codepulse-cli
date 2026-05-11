@@ -6,6 +6,7 @@ export const GOD_FILE_IMPORTS = 15;
 export function createFileNode(
   filePath: string,
   relativePath: string,
+  content: string,
   lines: number,
   imports: string[],
   exports: string[],
@@ -22,6 +23,7 @@ export function createFileNode(
   return {
     path: filePath,
     relativePath,
+    content,
     lines,
     imports,
     exports,

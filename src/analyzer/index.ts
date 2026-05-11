@@ -4,6 +4,7 @@ import { analyzeFile } from './ast';
 import { buildGraph, detectDeadExports } from './graph';
 import { runRules } from '../rules';
 import { getGitChurn, calculateHotspots } from './git';
+import { loadPlugins } from '../utils/plugins';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -91,7 +92,8 @@ export async function analyze(
     : 0;
 
   const context: AnalysisContext = { files, graph, edges, config };
-  const issues = runRules(context, { strict: options.strict });
+  const externalRules = await loadPlugins(dir);
+  const issues = runRules(context, { strict: options.strict }, externalRules);
 
   return {
     files, edges, graph,

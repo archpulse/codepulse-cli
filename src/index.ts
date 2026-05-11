@@ -16,6 +16,7 @@ import { runMcpServer } from './commands/mcp';
 import { runScan } from './commands/scan';
 import { runLicense } from './commands/license';
 import { setLocale, t, Locale } from './utils/i18n';
+import { listPlugins } from './utils/plugins';
 
 const pkgPath = path.resolve(__dirname, '../package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -278,6 +279,39 @@ program
     }
 
     console.log('\n' + chalk.gray(sym.line.repeat(52)) + '\n');
+  });
+
+program
+  .command('plugins [dir]')
+  .description('List all available plugins with metadata')
+  .option('--json', 'Output as JSON')
+  .action(async (dir = '.', opts) => {
+    const absDir = path.resolve(dir);
+    try {
+      const plugins = await listPlugins(absDir);
+      
+      if (opts.json) {
+        console.log(JSON.stringify(plugins, null, 2));
+      } else {
+        if (plugins.length === 0) {
+          console.log(chalk.yellow('\n  No plugins found.\n'));
+          return;
+        }
+
+        console.log(chalk.bold('\n  📦 Loaded Plugins\n  ' + '─'.repeat(50)));
+        
+        for (const plugin of plugins) {
+          const statusIcon = plugin.enabled ? chalk.green('●') : chalk.gray('○');
+          console.log(`\n  ${statusIcon} ${chalk.cyan(plugin.name)} ${chalk.gray(`v${plugin.version}`)}`);
+          console.log(`    ${chalk.white(plugin.description)}`);
+          console.log(`    ${chalk.gray(`Category: ${plugin.category} | Author: ${plugin.author} | File: ${plugin.file}`)}`);
+        }
+        console.log('');
+      }
+    } catch (err) {
+      console.error(chalk.red('Failed to list plugins:'), err);
+      process.exit(1);
+    }
   });
 
 program.parse(process.argv);

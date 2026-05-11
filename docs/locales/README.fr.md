@@ -31,6 +31,7 @@ codepulse scan .
 - **🎨 CLI Magnifiquement Coloré** — Amélioré avec de l'art ASCII, des bannières et des exemples clairs.
 - **🌐 Support Multilingue** — Utilisez `--lang` pour basculer entre 7 langues.
 - **📜 Générateur de Licence** — Générez instantanément plus de 10 types de licences open-source.
+- **🔌 Système de Plugins** — Étendez CodePulse avec des règles d'analyse personnalisées. [En savoir plus](../PLUGINS.md).
 - **🔍 Analyse de Sécurité** — Détecte les vulnérabilités, les secrets codés en dur et les problèmes SCA.
 - **🔥 Détection des Hotspots** — Trouve les fichiers à risque basés sur la complexité et l'activité Git.
 
@@ -41,6 +42,7 @@ codepulse scan .
 | Commande | Description |
 |---------|-------------|
 | `codepulse scan [dir]` | Analyse complète + rapport HTML + SARIF |
+| `codepulse plugins [dir]` | Liste de tous les plugins disponibles avec métadonnées |
 | `codepulse license <type> [name]` | Générer un fichier LICENSE (mit, apache, bsd...) |
 | `codepulse stats [dir]` | Statistiques rapides en console |
 | `codepulse explain [topic]` | Explication détaillée des problèmes |

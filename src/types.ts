@@ -9,6 +9,7 @@ export interface FunctionNode {
 export interface FileNode {
   path: string;
   relativePath: string;
+  content: string;
   imports: string[];
   exports: string[];
   functions: FunctionNode[];
@@ -73,7 +74,8 @@ export type IssueType =
   | 'critical-node'
   | 'vulnerability'
   | 'duplication'
-  | 'dependency-vulnerability';
+  | 'dependency-vulnerability'
+  | 'custom';
 
 export type IssueSeverity = 'info' | 'warning' | 'error';
 

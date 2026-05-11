@@ -46,7 +46,7 @@ export function analyzeFile(filePath: string, baseDir: string): FileNode | null 
     // Ignore traversal errors
   }
 
-  return createFileNode(filePath, relativePath, lines, imports, exports, functions);
+  return createFileNode(filePath, relativePath, content, lines, imports, exports, functions);
 }
 
 function parseContent(content: string): t.File | null {

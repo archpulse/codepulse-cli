@@ -121,7 +121,7 @@ export function analyzeGenericFile(filePath: string, baseDir: string): FileNode 
 
   // We override the complexity calculation here since generic.ts relies on regex matching, 
   // not per-function reduction.
-  const fileNode = createFileNode(filePath, relativePath, lines, imports, exports, functions);
+  const fileNode = createFileNode(filePath, relativePath, content, lines, imports, exports, functions);
   fileNode.complexity = fileComplexity;
   return fileNode;
 }

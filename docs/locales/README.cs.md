@@ -31,6 +31,7 @@ codepulse scan .
 - **🎨 Krásné barevné CLI** — Vylepšeno o ASCII art a jasné příklady.
 - **🌐 Podpora více jazyků** — Použijte `--lang` pro přepínání mezi 7 jazyky.
 - **📜 Generátor licencí** — Okamžité vytvoření více než 10 typů open-source licencí.
+- **🔌 Systém modulů plug-in** — Rozšiřujte CodePulse vlastními pravidly analýzy. [Více informací](../PLUGINS.md).
 - **🔍 Bezpečnostní analýza** — Detekuje zranitelnosti a problémy v závislostech (SCA).
 - **🔥 Detekce hotspotů** — Najde rizikové soubory na základě složitosti a git churnu.
 
@@ -41,6 +42,7 @@ codepulse scan .
 | Příkaz | Popis |
 |---------|-------------|
 | `codepulse scan [dir]` | Kompletní analýza + HTML report + SARIF |
+| `codepulse plugins [dir]` | Seznam všech dostupných modulů plug-in s metadaty |
 | `codepulse license <type> [name]` | Vygenerovat soubor LICENSE (mit, apache, bsd...) |
 | `codepulse stats [dir]` | Rychlé statistiky v konzoli |
 | `codepulse explain [topic]` | Detailní vysvětlení problémů |
