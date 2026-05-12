@@ -2,14 +2,14 @@
 
 > Erweiterte statische Analyse und Sicherheitsscan für JS/TS-Projekte. Finden Sie Schwachstellen, erkennen Sie Hotspots und visualisieren Sie die Code-Integrität.
 
-[![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
+[![CodePulse Health](../badge.svg)](https://github.com/archpulse/codepulse-cli)
 [![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ### 🌍 Sprachen
-[English](../../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
+[English](../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
 
 ---
 
@@ -32,9 +32,22 @@ codepulse scan .
 - **🎨 Schönes farbiges CLI** — Erweitert um ASCII-Art, Banner und klare Beispiele.
 - **🌐 Mehrsprachige Unterstützung** — Verwenden Sie `--lang`, um zwischen 7 Sprachen zu wechseln.
 - **📜 Lizenzgenerator** — Erstellen Sie sofort über 10 Arten von Open-Source-Lizenzen.
-- **🔌 Plugin-System** — Erweitern Sie CodePulse mit benutzerdefinierten Analyseregeln. [Weitere Informationen](../PLUGINS.md).
+- **🔌 Plugin-System** — Erweitern Sie CodePulse mit benutzerdefinierten Analyseregeln. [Weitere Informationen](../docs/PLUGINS.md).
 - **🔍 Sicherheitsanalyse** — Erkennt Schwachstellen, hartcodierte Geheimnisse und SCA-Probleme.
 - **🔥 Hotspot-Erkennung** — Findet riskante Dateien basierend auf Komplexität und Git-Aktivität.
+
+---
+
+## Screenshots
+
+### Screenshots zur Programmerklärung
+![Screenshot mit Programmerklärung](../screenshots/report.png)
+![Screenshot mit Programmerklärung](../screenshots/critical-node.png)
+![Screenshot mit Programmerklärung](../screenshots/dependency-vulnerability.png)
+![Screenshot mit Programmerklärung](../screenshots/duplication.png)
+![Screenshot mit Programmerklärung](../screenshots/god-file.png)
+![Screenshot mit Programmerklärung](../screenshots/high-complexity.png)
+![Screenshot mit Programmerklärung](../screenshots/vulnerability.png)
 
 ---
 

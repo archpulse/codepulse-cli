@@ -30,3 +30,5 @@ coverage/
 
 # TypeScript
 tsconfig.tsbuildinfo
+
+biome.json

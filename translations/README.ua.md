@@ -2,14 +2,14 @@
 
 > Глибокий статичний аналіз та сканування безпеки для JS/TS проектів. Пошук вразливостей, гарячих точок та візуалізація здоров'я коду.
 
-[![CodePulse Health](../../badge.svg)](https://github.com/archpulse/codepulse-cli)
+[![CodePulse Health](../badge.svg)](https://github.com/archpulse/codepulse-cli)
 [![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ### 🌍 Мови
-[English](../../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
+[English](../README.md) | [Українська](./README.ua.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md) | [한국어](./README.ko.md) | [Deutsch](./README.de.md) | [Français](./README.fr.md)
 
 ---
 
@@ -32,9 +32,22 @@ codepulse scan .
 - **🎨 Красивий кольоровий CLI** — З ASCII-артом, баннерами та зрозумілими прикладами.
 - **🌐 Мультимовність** — Використовуйте `--lang` для перемикання між 7 мовами.
 - **📜 Генератор ліцензій** — Миттєве створення 10+ типів Open Source ліцензій.
-- **🔌 Система плагінів** — Розширюйте CodePulse власними правилами аналіза. [Докладніше](../PLUGINS.md).
+- **🔌 Система плагінів** — Розширюйте CodePulse власними правилами аналіза. [Докладніше](../docs/PLUGINS.md).
 - **🔍 Аналіз безпеки** — Пошук вразливостей, секретів та проблем у залежностях (SCA).
 - **🔥 Пошук Hotspots** — Визначення ризикованих файлів на основі складності та активності в Git.
+
+---
+
+## Скріншоти
+
+### Скріншоти з поясненням програми
+![скріншот пояснення програми](../screenshots/report.png)
+![скріншот пояснення програми](../screenshots/critical-node.png)
+![скріншот пояснення програми](../screenshots/dependency-vulnerability.png)
+![скріншот пояснення програми](../screenshots/duplication.png)
+![скріншот пояснення програми](../screenshots/god-file.png)
+![скріншот пояснення програми](../screenshots/high-complexity.png)
+![скріншот пояснення програми](../screenshots/vulnerability.png)
 
 ---
 

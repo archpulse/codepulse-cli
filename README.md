@@ -9,7 +9,7 @@
 ---
 
 ### 🌍 Languages / Мови / Языки
-[English](./README.md) | [Українська](./docs/locales/README.ua.md) | [Русский](./docs/locales/README.ru.md) | [Čeština](./docs/locales/README.cs.md) | [한국어](./docs/locales/README.ko.md) | [Deutsch](./docs/locales/README.de.md) | [Français](./docs/locales/README.fr.md)
+[English](./README.md) | [Українська](./translations/README.ua.md) | [Русский](./translations/README.ru.md) | [Čeština](./translations/README.cs.md) | [한국어](./translations/README.ko.md) | [Deutsch](./translations/README.de.md) | [Français](./translations/README.fr.md)
 
 ---
 
@@ -32,10 +32,24 @@ codepulse scan .
 - **🎨 Beautiful Colorful CLI** — Enhanced with rich colors, ASCII art banners, and clear examples.
 - **🌐 Multilingual Support** — Use `--lang` to switch between 7 languages (en, ua, ru, cs, ko, de, fr).
 - **📜 License Generator** — Generate 10+ types of open-source licenses instantly.
-- **🔌 Plugin System** — Extend CodePulse with custom rules and analysis logic. [Learn more](./docs/PLUGINS.md).
-- **🤖 Zero-Config MCP Server** — Works with Claude Desktop, Cursor, and more.
-- **🔍 Security Analysis** — Detects vulnerabilities, hardcoded secrets, and SCA issues.
-- **🔥 Hotspot Detection** — Finds risky files based on complexity and git churn.
+## Documentation
+
+- **📐 [Architecture & Internal Workflows](./docs/ARCHITECTURE.md)** — Learn how CodePulse works under the hood.
+- **🔌 [Plugin System Development](./docs/PLUGINS.md)** — Build your own analysis rules.
+
+---
+
+## Commands
+
+
+### Program Explanation Screenshots
+![Program Explanation Screenshot](./screenshots/report.png)
+![Program Explanation Screenshot](./screenshots/critical-node.png)
+![Program Explanation Screenshot](./screenshots/dependency-vulnerability.png)
+![Program Explanation Screenshot](./screenshots/duplication.png)
+![Program Explanation Screenshot](./screenshots/god-file.png)
+![Program Explanation Screenshot](./screenshots/high-complexity.png)
+![Program Explanation Screenshot](./screenshots/vulnerability.png)
 
 ---
 
