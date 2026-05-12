@@ -69,8 +69,26 @@ function updateStandardConfig(configPath: string, mcpConfig: any): boolean {
 	const config = readJsonConfig(configPath);
 	const pathLower = configPath.toLowerCase();
 
-	// Kilo CLI and OpenCode prefer 'mcp' key
-	// Kilo Code extension and most others prefer 'mcpServers'
+	const { key, isKiloCLI, isOpenCode } = getConfigKeyAndContext(
+		config,
+		pathLower,
+	);
+
+	if (!config[key]) {
+		config[key] = {};
+	}
+
+	config[key].codepulse = buildServerConfig(
+		mcpConfig,
+		pathLower,
+		isKiloCLI,
+		isOpenCode,
+	);
+	fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+	return true;
+}
+
+function getConfigKeyAndContext(config: any, pathLower: string) {
 	const isKiloCLI =
 		pathLower.includes("kilo") && !pathLower.includes("kilocode");
 	const isOpenCode = pathLower.includes("opencode");
@@ -79,19 +97,21 @@ function updateStandardConfig(configPath: string, mcpConfig: any): boolean {
 	if (config.mcp || isKiloCLI || isOpenCode) {
 		key = "mcp";
 	}
+	return { key, isKiloCLI, isOpenCode };
+}
 
-	if (!config[key]) {
-		config[key] = {};
-	}
-
+function buildServerConfig(
+	mcpConfig: any,
+	pathLower: string,
+	isKiloCLI: boolean,
+	isOpenCode: boolean,
+) {
 	const serverConfig: any = { ...mcpConfig };
 
-	// Antigravity / Gemini specific: trust the server if it's in settings.json or mcp_config.json
 	if (pathLower.includes(".gemini")) {
 		serverConfig.trust = true;
 	}
 
-	// Handle tools that prefer array-style command
 	const needsArrayCommand =
 		isKiloCLI ||
 		isOpenCode ||
@@ -102,16 +122,12 @@ function updateStandardConfig(configPath: string, mcpConfig: any): boolean {
 		serverConfig.command = [mcpConfig.command, ...mcpConfig.args];
 		delete serverConfig.args;
 
-		// Kilo CLI and OpenCode specific fields
 		if (isKiloCLI || isOpenCode) {
 			serverConfig.type = "local";
 			serverConfig.enabled = true;
 		}
 	}
-
-	config[key].codepulse = serverConfig;
-	fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-	return true;
+	return serverConfig;
 }
 
 export function setupMcpConfigs() {
@@ -131,22 +147,11 @@ export function setupMcpConfigs() {
 	let configuredCount = 0;
 
 	for (const configPath of configs) {
-		const dir = path.dirname(configPath);
-		if (fs.existsSync(dir) || configPath === path.join(home, ".claude.json")) {
+		if (shouldUpdateConfig(configPath, home)) {
 			try {
-				let updated = false;
-
-				// GitHub Copilot CLI config
-				if (configPath.includes("github-copilot")) {
-					updated = updateGitHubCopilotConfig(configPath, mcpConfig);
-				} else if (configPath.toLowerCase().includes("zed")) {
-					updated = updateZedConfig(configPath, mcpConfig);
-				} else if (configPath.endsWith(".claude.json")) {
-					updated = updateClaudeCodeConfig(configPath, mcpConfig);
-				} else {
-					updated = updateStandardConfig(configPath, mcpConfig);
+				if (updateConfigByPath(configPath, mcpConfig)) {
+					configuredCount++;
 				}
-				if (updated) configuredCount++;
 			} catch (_err) {
 				// Silently ignore
 			}
@@ -154,18 +159,40 @@ export function setupMcpConfigs() {
 	}
 
 	if (configuredCount > 0) {
-		const codepulseDir = path.join(home, ".codepulse");
-		if (!fs.existsSync(codepulseDir)) {
-			fs.mkdirSync(codepulseDir, { recursive: true });
-		}
-		fs.writeFileSync(
-			path.join(codepulseDir, "mcp-setup-done"),
-			new Date().toISOString(),
-			"utf8",
-		);
+		markMcpSetupDone(home);
 	}
 
 	return configuredCount;
+}
+
+function shouldUpdateConfig(configPath: string, home: string): boolean {
+	const dir = path.dirname(configPath);
+	return fs.existsSync(dir) || configPath === path.join(home, ".claude.json");
+}
+
+function updateConfigByPath(configPath: string, mcpConfig: any): boolean {
+	if (configPath.includes("github-copilot")) {
+		return updateGitHubCopilotConfig(configPath, mcpConfig);
+	}
+	if (configPath.toLowerCase().includes("zed")) {
+		return updateZedConfig(configPath, mcpConfig);
+	}
+	if (configPath.endsWith(".claude.json")) {
+		return updateClaudeCodeConfig(configPath, mcpConfig);
+	}
+	return updateStandardConfig(configPath, mcpConfig);
+}
+
+function markMcpSetupDone(home: string) {
+	const codepulseDir = path.join(home, ".codepulse");
+	if (!fs.existsSync(codepulseDir)) {
+		fs.mkdirSync(codepulseDir, { recursive: true });
+	}
+	fs.writeFileSync(
+		path.join(codepulseDir, "mcp-setup-done"),
+		new Date().toISOString(),
+		"utf8",
+	);
 }
 
 export function markDepsAsInstalled() {

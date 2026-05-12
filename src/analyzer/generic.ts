@@ -83,43 +83,18 @@ export function analyzeGenericFile(
 
 	const { content, relativePath, lines, imports, exports, functions } = init;
 
-	for (const pattern of config.importPatterns) {
-		const re = new RegExp(
-			pattern.source,
-			pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
-		);
-		let m = re.exec(content);
-		while (m !== null) {
-			if (m[1]) imports.push(m[1]);
-			m = re.exec(content);
-		}
-	}
+	extractMatches(content, config.importPatterns, (m) => {
+		if (m[1]) imports.push(m[1]);
+	});
 
-	for (const pattern of config.exportPatterns) {
-		const re = new RegExp(
-			pattern.source,
-			pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
-		);
-		let m = re.exec(content);
-		while (m !== null) {
-			if (m[1]) exports.push(m[1]);
-			m = re.exec(content);
-		}
-	}
+	extractMatches(content, config.exportPatterns, (m) => {
+		if (m[1]) exports.push(m[1]);
+	});
 
 	const lineOffsets = buildLineOffsets(content);
-	for (const pattern of config.funcPatterns) {
-		const re = new RegExp(
-			pattern.source,
-			pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
-		);
-		let m = re.exec(content);
-		while (m !== null) {
-			const name = m[1];
-			if (!name || name.length < 2) {
-				m = re.exec(content);
-				continue;
-			}
+	extractMatches(content, config.funcPatterns, (m) => {
+		const name = m[1];
+		if (name && name.length >= 2) {
 			const startLine = getLineNumber(m.index, lineOffsets);
 			functions.push({
 				name,
@@ -128,15 +103,12 @@ export function analyzeGenericFile(
 				complexity: 1,
 				isExported: exports.includes(name),
 			});
-			m = re.exec(content);
 		}
-	}
+	});
 
 	const complexityMatches = content.match(config.complexityKeywords);
 	const fileComplexity = 1 + (complexityMatches?.length ?? 0);
 
-	// We override the complexity calculation here since generic.ts relies on regex matching,
-	// not per-function reduction.
 	const fileNode = createFileNode(
 		filePath,
 		relativePath,
@@ -148,6 +120,24 @@ export function analyzeGenericFile(
 	);
 	fileNode.complexity = fileComplexity;
 	return fileNode;
+}
+
+function extractMatches(
+	content: string,
+	patterns: RegExp[],
+	callback: (match: RegExpExecArray) => void,
+) {
+	for (const pattern of patterns) {
+		const re = new RegExp(
+			pattern.source,
+			pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`,
+		);
+		let m = re.exec(content);
+		while (m !== null) {
+			callback(m);
+			m = re.exec(content);
+		}
+	}
 }
 
 function buildLineOffsets(content: string): number[] {

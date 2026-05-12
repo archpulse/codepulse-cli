@@ -83,13 +83,13 @@ function printGrouped(issues: Issue[], groupBy: string): void {
 
 	for (const issue of issues) {
 		const key =
-			groupBy === "file"
+			(groupBy === "file"
 				? issue.file
 				: groupBy === "type"
 					? issue.type
 					: groupBy === "severity"
 						? issue.severity
-						: issue.file;
+						: issue.file) || "unknown";
 
 		if (!groups.has(key)) groups.set(key, []);
 		groups.get(key)?.push(issue);
@@ -102,18 +102,22 @@ function printGrouped(issues: Issue[], groupBy: string): void {
 	for (const [key, groupIssues] of groups) {
 		console.log(`\n  ${chalk.bold.cyan(key)}`);
 		for (const issue of groupIssues) {
-			const color = severityColor(issue.severity);
-			const line = issue.line ? `:${issue.line}` : "";
-			const sym = issue.symbol ? chalk.gray(" ❯ ") + issue.symbol : "";
-			console.log(
-				`    ${color(`[${issue.severity.toUpperCase()}]`)} ${issue.type}${line}${sym}` +
-					(issue.suggestion
-						? `\n    ${chalk.gray("→")} ${chalk.italic(issue.suggestion)}`
-						: ""),
-			);
+			printSingleIssueGrouped(issue);
 		}
 	}
 	console.log("");
+}
+
+function printSingleIssueGrouped(issue: Issue) {
+	const color = severityColor(issue.severity);
+	const line = issue.line ? `:${issue.line}` : "";
+	const sym = issue.symbol ? chalk.gray(" ❯ ") + issue.symbol : "";
+	console.log(
+		`    ${color(`[${issue.severity.toUpperCase()}]`)} ${issue.type}${line}${sym}` +
+			(issue.suggestion
+				? `\n    ${chalk.gray("→")} ${chalk.italic(issue.suggestion)}`
+				: ""),
+	);
 }
 
 function severityColor(severity: IssueSeverity): (s: string) => string {
@@ -123,34 +127,15 @@ function severityColor(severity: IssueSeverity): (s: string) => string {
 }
 
 export async function runScan(dir: string | undefined, opts: any) {
-	const targetDir = dir || ".";
-	const absDir = path.resolve(targetDir);
+	const absDir = path.resolve(dir || ".");
 
 	if (!fs.existsSync(absDir)) {
-		console.error(chalk.red(`Directory not found: ${absDir}`));
-		if (!dir) {
-			console.log(
-				chalk.gray(
-					`\n  Tip: You didn't specify a directory. CodePulse tried scanning the current folder (.), but it might be inaccessible.`,
-				),
-			);
-			console.log(
-				chalk.gray(`  Usage: ${chalk.white("codepulse scan [dir]")}\n`),
-			);
-		}
-		process.exit(1);
+		handleMissingDir(dir, absDir);
+		return;
 	}
 
 	if (opts.json) {
-		try {
-			const result = await analyze(absDir, { strict: opts.strict });
-			const issues = filterIssues(result.issues, opts);
-			console.log(JSON.stringify(issues, null, 2));
-			exitWithCode(issues, opts);
-		} catch (err) {
-			console.error(JSON.stringify({ error: String(err) }));
-			process.exit(1);
-		}
+		await handleJsonOutput(absDir, opts);
 		return;
 	}
 
@@ -162,74 +147,125 @@ export async function runScan(dir: string | undefined, opts: any) {
 	try {
 		const result = await analyze(absDir, { strict: opts.strict });
 		spinner.text = "Generating report...";
-		const reportPath = generateReport(result, absDir);
-
-		const healthStats = {
-			vulnerabilities: result.issues.filter((i) => i.type === "vulnerability")
-				.length,
-			deadExports: result.deadExports.length,
-			godFiles: result.godFiles.length,
-			criticalFiles: result.criticalFiles.length,
-			hotspots: result.hotspots,
-			avgComplexity: result.avgComplexity,
-		};
-		const score = calculateHealthScore(healthStats, result);
-		const badgeSvg = generateBadge(result, score);
-		const badgePath = saveBadge(badgeSvg, absDir);
-
-		if (opts.sarif) {
-			const sarifPath = generateSarif(result, absDir);
-			console.log(`\n  ${chalk.bold("SARIF:")}  ${chalk.cyan(sarifPath)}`);
-		}
+		const { reportPath, badgePath } = await generateScanOutputs(
+			result,
+			absDir,
+			opts,
+		);
 
 		spinner.succeed(chalk.green("Analysis complete!"));
 
-		console.log(
-			`\n  ${chalk.bold("Report:")} ${chalk.cyan(path.join(reportPath, "index.html"))}`,
-		);
-		console.log(`  ${chalk.bold("Badge:")}  ${chalk.cyan(badgePath)}`);
-		printStats(result, absDir);
-
-		const issues = filterIssues(result.issues, opts);
-		const errors = issues.filter((i) => i.severity === "error").length;
-		const warnings = issues.filter((i) => i.severity === "warning").length;
-
-		const filters: string[] = [];
-		if (opts.focus) filters.push(`focus: ${opts.focus}`);
-		if (opts.severity) filters.push(`severity: ${opts.severity}`);
-		if (opts.maxIssues) filters.push(`max: ${opts.maxIssues}`);
-		if (opts.strict) filters.push("strict mode");
-		if (filters.length)
-			console.log(chalk.gray(`  Filters: ${filters.join("  ")}`));
-
-		console.log(
-			`  ${chalk.bold("Issues:")} ${chalk.red(`${errors} errors`)}  ${chalk.yellow(`${warnings} warnings`)}  ${chalk.gray(`(${issues.length} total)`)}\n`,
-		);
+		printScanSummary(result, absDir, reportPath, badgePath, opts);
 
 		if (opts.debug || opts.focus || opts.severity) {
-			if (opts.groupBy) {
-				printGrouped(issues, opts.groupBy);
-			} else {
-				printIssues(issues);
-			}
+			const issues = filterIssues(result.issues, opts);
+			if (opts.groupBy) printGrouped(issues, opts.groupBy);
+			else printIssues(issues);
 		}
 
-		if (opts.open) {
-			const { exec } = require("node:child_process");
-			const reportFile = path.join(reportPath, "index.html");
-			const openCmd =
-				process.platform === "win32"
-					? `start ${reportFile}`
-					: process.platform === "darwin"
-						? `open ${reportFile}`
-						: `xdg-open ${reportFile}`;
-			exec(openCmd);
-		}
+		if (opts.open) openReport(reportPath);
 
-		exitWithCode(issues, opts);
+		exitWithCode(filterIssues(result.issues, opts), opts);
 	} catch (err) {
 		spinner.fail(chalk.red("Analysis failed"));
 		console.error(err);
 		process.exit(1);
 	}
+}
+
+function handleMissingDir(dir: string | undefined, absDir: string) {
+	console.error(chalk.red(`Directory not found: ${absDir}`));
+	if (!dir) {
+		console.log(
+			chalk.gray(
+				"\n  Tip: You didn't specify a directory. CodePulse tried scanning the current folder (.), but it might be inaccessible.",
+			),
+		);
+		console.log(
+			chalk.gray(`  Usage: ${chalk.white("codepulse scan [dir]")}\n`),
+		);
+	}
+	process.exit(1);
+}
+
+async function handleJsonOutput(absDir: string, opts: any) {
+	try {
+		const result = await analyze(absDir, { strict: opts.strict });
+		const issues = filterIssues(result.issues, opts);
+		console.log(JSON.stringify(issues, null, 2));
+		exitWithCode(issues, opts);
+	} catch (err) {
+		console.error(JSON.stringify({ error: String(err) }));
+		process.exit(1);
+	}
+}
+
+async function generateScanOutputs(result: any, absDir: string, opts: any) {
+	const reportPath = generateReport(result, absDir);
+	const healthStats = {
+		vulnerabilities: result.issues.filter(
+			(i: any) => i.type === "vulnerability",
+		).length,
+		deadExports: result.deadExports.length,
+		godFiles: result.godFiles.length,
+		criticalFiles: result.criticalFiles.length,
+		hotspots: result.hotspots,
+		avgComplexity: result.avgComplexity,
+	};
+	const score = calculateHealthScore(healthStats, result);
+	const badgeSvg = generateBadge(result, score);
+	const badgePath = saveBadge(badgeSvg, absDir);
+
+	if (opts.sarif) {
+		const sarifPath = generateSarif(result, absDir);
+		console.log(`\n  ${chalk.bold("SARIF:")}  ${chalk.cyan(sarifPath)}`);
+	}
+
+	return { reportPath, badgePath, score };
+}
+
+function printScanSummary(
+	result: any,
+	absDir: string,
+	reportPath: string,
+	badgePath: string,
+	opts: any,
+) {
+	console.log(
+		`\n  ${chalk.bold("Report:")} ${chalk.cyan(path.join(reportPath, "index.html"))}`,
+	);
+	console.log(`  ${chalk.bold("Badge:")}  ${chalk.cyan(badgePath)}`);
+	printStats(result, absDir);
+
+	const issues = filterIssues(result.issues, opts);
+	const errors = issues.filter((i) => i.severity === "error").length;
+	const warnings = issues.filter((i) => i.severity === "warning").length;
+
+	printFilters(opts);
+
+	console.log(
+		`  ${chalk.bold("Issues:")} ${chalk.red(`${errors} errors`)}  ${chalk.yellow(`${warnings} warnings`)}  ${chalk.gray(`(${issues.length} total)`)}\n`,
+	);
+}
+
+function printFilters(opts: any) {
+	const filters: string[] = [];
+	if (opts.focus) filters.push(`focus: ${opts.focus}`);
+	if (opts.severity) filters.push(`severity: ${opts.severity}`);
+	if (opts.maxIssues) filters.push(`max: ${opts.maxIssues}`);
+	if (opts.strict) filters.push("strict mode");
+	if (filters.length)
+		console.log(chalk.gray(`  Filters: ${filters.join("  ")}`));
+}
+
+function openReport(reportPath: string) {
+	const { exec } = require("node:child_process");
+	const reportFile = path.join(reportPath, "index.html");
+	const openCmd =
+		process.platform === "win32"
+			? `start ${reportFile}`
+			: process.platform === "darwin"
+				? `open ${reportFile}`
+				: `xdg-open ${reportFile}`;
+	exec(openCmd);
 }

@@ -1,5 +1,4 @@
-import type { Rule } from "../src/rules/rule";
-import type { AnalysisContext, Issue } from "../src/types";
+import type { AnalysisContext, Issue, Rule } from "../src/types/index";
 
 export default class TodoRule implements Rule {
 	name = "todo-finder";

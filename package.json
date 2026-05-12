@@ -1,6 +1,7 @@
 {
 	"name": "@archpulse/codepulse",
-	"version": "2.2.4",
+	"version": "3.0.0",
+
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/archpulse/codepulse-cli.git"
@@ -8,6 +9,7 @@
 	"description": "Deep code structure analysis for large JS/TS and Python projects",
 	"license": "MIT",
 	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"bin": {
 		"codepulse": "dist/index.js"
 	},
@@ -22,10 +24,13 @@
 		"@babel/traverse": "^7.23.0",
 		"@babel/types": "^7.23.0",
 		"@modelcontextprotocol/sdk": "^1.29.0",
+		"ansi-escapes": "^7.3.0",
 		"chalk": "^4.1.2",
+		"chokidar": "^5.0.0",
 		"commander": "^11.1.0",
 		"glob": "^10.3.10",
 		"handlebars": "^4.7.8",
+		"log-update": "^8.0.0",
 		"ora": "^5.4.1",
 		"ts-morph": "^21.0.1",
 		"update-notifier": "^7.3.1"

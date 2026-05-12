@@ -3,6 +3,7 @@ import * as parser from "@babel/parser";
 import traverse, { type NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import type { FileNode, FunctionNode } from "../types/index";
+import { generateFunctionFingerprint } from "./ast-fingerprint";
 import { analyzeGenericFile } from "./generic";
 import { analyzePythonFile } from "./python";
 import { createFileNode, initializeFileAnalysis } from "./utils";
@@ -204,16 +205,28 @@ function handleFunction(
 	const complexity = calculateComplexity(node);
 	const isExported = exports.some((e) => e === name);
 
-	functions.push({ name, startLine, endLine, complexity, isExported });
+	let fingerprint: string | undefined;
+	try {
+		fingerprint = generateFunctionFingerprint(node);
+	} catch {
+		// Fallback for complex trees
+	}
+
+	functions.push({
+		name,
+		startLine,
+		endLine,
+		complexity,
+		isExported,
+		fingerprint,
+	});
 }
 
 function calculateComplexity(node: t.Node): number {
 	let complexity = 1;
-	traverse(node, {
-		noScope: true,
-		enter(p) {
-			if (isComplexityNode(p.node)) complexity++;
-		},
+	// Use a simple walker instead of full traverse for performance
+	t.traverseFast(node, (n) => {
+		if (isComplexityNode(n)) complexity++;
 	});
 	return complexity;
 }

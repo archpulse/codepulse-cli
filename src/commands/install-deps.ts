@@ -44,93 +44,96 @@ const PACKAGE_MAP: Record<string, Partial<Record<PackageManager, string>>> = {
 	luacheck: { "apt-get": "lua-check", pacman: "luacheck" },
 };
 
+interface ToolDef {
+	name: string;
+	checkCmd: string;
+	install: (pm: PackageManager | null) => void;
+}
+
+const TOOLS: ToolDef[] = [
+	{
+		name: "Biome (JS/TS)",
+		checkCmd: "biome",
+		install: () =>
+			installTool("Biome (JS/TS)", "npm install -g @biomejs/biome", "biome"),
+	},
+	{
+		name: "Ruff (Python)",
+		checkCmd: "ruff",
+		install: (pm) => {
+			const ruffPkg = getPkgName("ruff", pm);
+			if (pm && ruffPkg && (pm !== "apt-get" || isCommandAvailable("ruff"))) {
+				installTool("Ruff (Python)", INSTALL_COMMANDS[pm](ruffPkg), "ruff");
+			} else if (isCommandAvailable("pip")) {
+				installTool("Ruff (Python)", "pip install ruff", "ruff");
+			}
+		},
+	},
+	{
+		name: "Cppcheck (C/C++)",
+		checkCmd: "cppcheck",
+		install: (pm) => {
+			const cppPkg = getPkgName("cppcheck", pm);
+			if (pm && cppPkg)
+				installTool(
+					"Cppcheck (C/C++)",
+					INSTALL_COMMANDS[pm](cppPkg),
+					"cppcheck",
+				);
+		},
+	},
+	{
+		name: "ShellCheck (Shell)",
+		checkCmd: "shellcheck",
+		install: (pm) => {
+			const shPkg = getPkgName("shellcheck", pm);
+			if (pm && shPkg)
+				installTool(
+					"ShellCheck (Shell)",
+					INSTALL_COMMANDS[pm](shPkg),
+					"shellcheck",
+				);
+		},
+	},
+	{
+		name: "GolangCI-Lint (Go)",
+		checkCmd: "golangci-lint",
+		install: (pm) => {
+			const goPkg = getPkgName("golangci-lint", pm);
+			if (pm && goPkg && pm !== "apt-get") {
+				installTool(
+					"GolangCI-Lint (Go)",
+					INSTALL_COMMANDS[pm](goPkg),
+					"golangci-lint",
+				);
+			} else if (isCommandAvailable("go")) {
+				installTool(
+					"GolangCI-Lint (Go)",
+					"go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+					"golangci-lint",
+				);
+			}
+		},
+	},
+	{
+		name: "Luacheck (Lua)",
+		checkCmd: "luacheck",
+		install: (pm) => {
+			const luaPkg = getPkgName("luacheck", pm);
+			if (isCommandAvailable("luarocks")) {
+				installTool("Luacheck (Lua)", "luarocks install luacheck", "luacheck");
+			} else if (pm && luaPkg) {
+				installTool("Luacheck (Lua)", INSTALL_COMMANDS[pm](luaPkg), "luacheck");
+			}
+		},
+	},
+];
+
 function getToolInstallers(pm: PackageManager | null) {
-	return [
-		{
-			name: "Biome (JS/TS)",
-			checkCmd: "biome",
-			install: () =>
-				installTool("Biome (JS/TS)", "npm install -g @biomejs/biome", "biome"),
-		},
-		{
-			name: "Ruff (Python)",
-			checkCmd: "ruff",
-			install: () => {
-				const ruffPkg = getPkgName("ruff", pm);
-				if (pm && ruffPkg && (pm !== "apt-get" || isCommandAvailable("ruff"))) {
-					installTool("Ruff (Python)", INSTALL_COMMANDS[pm](ruffPkg), "ruff");
-				} else if (isCommandAvailable("pip")) {
-					installTool("Ruff (Python)", "pip install ruff", "ruff");
-				}
-			},
-		},
-		{
-			name: "Cppcheck (C/C++)",
-			checkCmd: "cppcheck",
-			install: () => {
-				const cppPkg = getPkgName("cppcheck", pm);
-				if (pm && cppPkg)
-					installTool(
-						"Cppcheck (C/C++)",
-						INSTALL_COMMANDS[pm](cppPkg),
-						"cppcheck",
-					);
-			},
-		},
-		{
-			name: "ShellCheck (Shell)",
-			checkCmd: "shellcheck",
-			install: () => {
-				const shPkg = getPkgName("shellcheck", pm);
-				if (pm && shPkg)
-					installTool(
-						"ShellCheck (Shell)",
-						INSTALL_COMMANDS[pm](shPkg),
-						"shellcheck",
-					);
-			},
-		},
-		{
-			name: "GolangCI-Lint (Go)",
-			checkCmd: "golangci-lint",
-			install: () => {
-				const goPkg = getPkgName("golangci-lint", pm);
-				if (pm && goPkg && pm !== "apt-get") {
-					installTool(
-						"GolangCI-Lint (Go)",
-						INSTALL_COMMANDS[pm](goPkg),
-						"golangci-lint",
-					);
-				} else if (isCommandAvailable("go")) {
-					installTool(
-						"GolangCI-Lint (Go)",
-						"go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
-						"golangci-lint",
-					);
-				}
-			},
-		},
-		{
-			name: "Luacheck (Lua)",
-			checkCmd: "luacheck",
-			install: () => {
-				const luaPkg = getPkgName("luacheck", pm);
-				if (isCommandAvailable("luarocks")) {
-					installTool(
-						"Luacheck (Lua)",
-						"luarocks install luacheck",
-						"luacheck",
-					);
-				} else if (pm && luaPkg) {
-					installTool(
-						"Luacheck (Lua)",
-						INSTALL_COMMANDS[pm](luaPkg),
-						"luacheck",
-					);
-				}
-			},
-		},
-	];
+	return TOOLS.map((t) => ({
+		...t,
+		install: () => t.install(pm),
+	}));
 }
 
 function preAuthenticateSudo() {
@@ -146,33 +149,21 @@ function preAuthenticateSudo() {
 	}
 }
 
-export async function runInstallDeps(isFirstRun = false) {
+function getPackageManager(): PackageManager | null {
 	const platform = os.platform();
-	const isWin = platform === "win32";
-	const isMac = platform === "darwin";
-	const isLinux = platform === "linux";
+	if (platform === "win32") {
+		return isCommandAvailable("choco") ? "choco" : null;
+	}
+	if (platform === "darwin") {
+		return isCommandAvailable("brew") ? "brew" : null;
+	}
+	return getLinuxPackageManager();
+}
 
-	const pm = isWin
-		? isCommandAvailable("choco")
-			? "choco"
-			: null
-		: isMac
-			? isCommandAvailable("brew")
-				? "brew"
-				: null
-			: getLinuxPackageManager();
+export async function runInstallDeps(isFirstRun = false) {
+	const pm = getPackageManager();
+	const missingTools = TOOLS.filter((t) => !isCommandAvailable(t.checkCmd));
 
-	// Check if anything needs to be installed
-	const tools = [
-		{ name: "Biome (JS/TS)", cmd: "biome" },
-		{ name: "Ruff (Python)", cmd: "ruff" },
-		{ name: "Cppcheck (C/C++)", cmd: "cppcheck" },
-		{ name: "ShellCheck (Shell)", cmd: "shellcheck" },
-		{ name: "GolangCI-Lint (Go)", cmd: "golangci-lint" },
-		{ name: "Luacheck (Lua)", cmd: "luacheck" },
-	];
-
-	const missingTools = tools.filter((t) => !isCommandAvailable(t.cmd));
 	if (missingTools.length === 0) {
 		if (!isFirstRun)
 			console.log(
@@ -192,20 +183,18 @@ export async function runInstallDeps(isFirstRun = false) {
 		),
 	);
 
-	// On Linux/Mac, pre-authenticate sudo to avoid multiple prompts inside spinners
-	if ((isLinux || isMac) && pm && pm !== "brew") {
+	const platform = os.platform();
+	if ((platform === "linux" || platform === "darwin") && pm && pm !== "brew") {
 		preAuthenticateSudo();
 	}
 
-	const toolInstallers = getToolInstallers(pm);
-
-	for (const t of toolInstallers) {
+	for (const t of getToolInstallers(pm)) {
 		t.install();
 	}
 
 	console.log(chalk.green.bold("\n  ✓ Dependency installation complete!\n"));
 
-	if (isWin) {
+	if (platform === "win32") {
 		console.log(
 			chalk.cyan(
 				"  Note: On Windows, you may need to restart your terminal to use newly installed Chocolatey packages.\n",

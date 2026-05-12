@@ -1,61 +1,32 @@
 # 🏛 Architecture & Internal Workflows
 
-CodePulse CLI is a modular static analysis tool designed for speed and extensibility. This document outlines the core components and data flows within the system.
+CodePulse CLI 3.0 is a modular intelligence tool designed for architectural validation, semantic code analysis, and real-time monitoring.
 
 ## 🧱 Core Components
 
-The system is divided into four main layers:
+1.  **CLI Layer (`src/commands/`)**: User interface for standard scan, stats, and the new real-time **Watch Mode**.
+2.  **Analyzer Layer (`src/analyzer/`)**:
+    *   **Scanner**: Multi-language file discovery.
+    *   **AST Engine**: Semantic parsing and **structural fingerprinting** for duplication detection.
+    *   **Graph Engine**: Dependency mapping and **Architectural Layer** validation.
+3.  **Rule Layer (`src/rules/index.ts`)**: Modular rules including `ArchitectureRule` for boundary checks, `ComplexityRule`, and `DeadExportRule`. Large or specialized rules (like `FastLinter` and `VulnerabilityScanner`) are maintained in separate files within `src/rules/` but aggregated in the main index.
+4.  **Reporter Layer (`src/reporter/`)**: Visualizes data in HTML, SARIF, or interactive TUI.
 
-1.  **CLI Layer (`src/commands/`)**: Handles user input, command-line arguments, and output formatting (Console, HTML, SARIF).
-2.  **Analyzer Layer (`src/analyzer/`)**: The engine responsible for scanning files, parsing code (AST), and building the dependency graph.
-3.  **Rule Layer (`src/rules/`)**: Contains the analysis logic. Each rule is a discrete module that runs against the analysis context.
-4.  **Reporter Layer (`src/reporter/`)**: Transforms analysis results into various formats (HTML dashboard, SARIF for CI/CD, SVG graphs).
+## 🔄 Advanced Workflows in v3.0
 
-## 🔄 Analysis Workflow
+### 🧠 Semantic Duplication Engine
+Instead of line-based hashing, CodePulse 3.0 uses **AST Structural Fingerprinting**.
+1.  **Normalization**: Babel identifiers and literals are replaced with generic tokens.
+2.  **Hashing**: A Merkle-tree-like hash is generated for every function node.
+3.  **Matching**: Functions with identical structural logic are flagged, even if variable names or spacing differ.
 
-When you run `codepulse scan`, the following steps occur:
+### 🏗️ Architectural Radar
+CodePulse now enforces system boundaries.
+1.  **Layer Definition**: Defined in `.codepulse.json` via path patterns.
+2.  **Edge Validation**: The dependency graph is compared against the allowed dependency matrix.
+3.  **Violation Reporting**: Direct imports that bypass layers (e.g., UI → Database) are reported as critical errors.
 
-### 1. File Discovery
-The `Scanner` (`src/analyzer/scanner.ts`) recursively walks the target directory, respecting `.gitignore` and `.codepulseignore`. It identifies supported files (JS, TS, Python, C++, etc.).
-
-### 2. Multi-Language Parsing
-CodePulse uses specialized parsers for different languages:
-- **JS/TS**: Powered by `@babel/parser` for full AST analysis.
-- **Python**: Generic parsing with specialized logic for imports.
-- **Generic**: Fallback line-based analysis for other supported languages.
-
-### 3. Graph Construction
-The `GraphBuilder` (`src/analyzer/graph.ts`) maps dependencies between files. It calculates:
-- **In-Degree/Out-Degree**: How many files import or are imported by this file.
-- **Centrality**: Identification of "Critical Nodes" that affect large portions of the codebase.
-
-### 4. Git Integration
-The `GitAnalyzer` (`src/analyzer/git.ts`) extracts commit history to calculate **Churn**. High churn combined with high complexity identifies **Hotspots** — the riskiest files in your project.
-
-### 5. Rule Execution
-The `runRules` engine executes two types of rules:
-- **Built-in Rules**: Complexity, SCA, Vulnerabilities, Dead Exports, etc.
-- **External Plugins**: Loaded dynamically from the `plugins/` directory.
-
-### 6. Report Generation
-The collected `Issues` and `Stats` are passed to the `Reporter`. The HTML reporter generates a self-contained dashboard with:
-- **Dependency Graph** (interactive SVG)
-- **Code Health Stats**
-- **Categorized Issue List**
-
-## 📂 Project Structure
-
-```text
-src/
-├── analyzer/      # Core scanning and analysis logic
-├── commands/      # CLI command definitions
-├── locales/       # Multilingual strings (i18n)
-├── reporter/      # HTML/SARIF/SVG generation
-├── rules/         # Analysis rules and rule engine
-├── types/         # System-wide TypeScript interfaces
-└── utils/         # Helper functions (plugins, i18n, etc.)
-```
-
-## 🔌 Extensibility
-
-CodePulse is built on a "Plugin-First" philosophy. The same `Rule` interface used for built-in analysis is available to external plugins. For more details on extending CodePulse, see [PLUGINS.md](./PLUGINS.md).
+### ⚡ Real-time Watch Mode
+A demonized process that provides instant feedback.
+1.  **Incremental Analysis**: Monitors file changes via `chokidar`.
+2.  **Live TUI Dashboard**: Uses `log-update` and ANSI escapes to render a real-time health dashboard in your terminal.

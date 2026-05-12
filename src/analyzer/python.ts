@@ -9,10 +9,8 @@ export function analyzePythonFile(
 	if (!init) return null;
 
 	const { content, relativePath, lines, imports, exports, functions } = init;
-
 	const lineArr = content.split("\n");
 
-	// Improved import regex
 	const importRe = /^(?:from\s+([\w.]+)\s+import|import\s+([\w.,\s]+))/;
 	const defRe = /^(def|async def|class)\s+(\w+)\s*[(:]/;
 
@@ -20,36 +18,18 @@ export function analyzePythonFile(
 		const line = lineArr[i];
 		const trimmed = line.trim();
 
-		// Skip comments and empty lines
 		if (trimmed.startsWith("#") || !trimmed) continue;
 
-		// Imports
 		const mImport = line.match(importRe);
 		if (mImport) {
 			const imp = mImport[1] ?? mImport[2].split(",")[0].trim();
 			if (imp) imports.push(imp);
+			continue;
 		}
 
-		// Functions/Classes
 		const mDef = line.match(defRe);
 		if (mDef) {
-			const name = mDef[2];
-			const isTopLevel = !line.startsWith(" ") && !line.startsWith("\t");
-			if (isTopLevel) exports.push(name);
-
-			const blockLines = extractBlock(lineArr, i);
-			const complexity = calcPythonComplexity(blockLines);
-
-			functions.push({
-				name,
-				startLine: i + 1,
-				endLine: i + blockLines.length,
-				complexity,
-				isExported: isTopLevel,
-			});
-			// Skip the rest of the block to avoid double counting nested functions for file complexity
-			// but we still want to detect them if they are top-level.
-			// Actually, for simple line-by-line, we just continue.
+			processPythonDefinition(line, mDef[2], i, lineArr, exports, functions);
 		}
 	}
 
@@ -62,6 +42,29 @@ export function analyzePythonFile(
 		exports,
 		functions,
 	);
+}
+
+function processPythonDefinition(
+	line: string,
+	name: string,
+	index: number,
+	lineArr: string[],
+	exports: string[],
+	functions: any[],
+) {
+	const isTopLevel = !line.startsWith(" ") && !line.startsWith("\t");
+	if (isTopLevel) exports.push(name);
+
+	const blockLines = extractBlock(lineArr, index);
+	const complexity = calcPythonComplexity(blockLines);
+
+	functions.push({
+		name,
+		startLine: index + 1,
+		endLine: index + blockLines.length,
+		complexity,
+		isExported: isTopLevel,
+	});
 }
 
 function extractBlock(lines: string[], startIdx: number): string[] {

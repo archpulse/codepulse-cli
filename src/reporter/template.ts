@@ -184,61 +184,7 @@ ${getCss()}
 
 <div class="container">
 
-  <div class="grid-4">
-    <div class="stat-card">
-      <div class="label">Total Files</div>
-      <div class="value">${stats.totalFiles}</div>
-      <div class="sub">JS / TS analyzed</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Total Lines</div>
-      <div class="value">${stats.totalLines.toLocaleString()}</div>
-      <div class="sub">lines of code</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Avg Complexity</div>
-      <div class="value" style="color:${stats.avgComplexity > 15 ? "var(--red)" : stats.avgComplexity > 8 ? "var(--yellow)" : "var(--green)"}">${stats.avgComplexity}</div>
-      <div class="sub">cyclomatic avg</div>
-    </div>
-    <div class="stat-card" style="border-color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--border)"}">
-      <div class="label" style="color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--muted)"}">Vulnerabilities</div>
-      <div class="value" style="color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--green)"}">${stats.vulnerabilities}</div>
-      <div class="sub">security issues</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Hotspots</div>
-      <div class="value" style="color:${stats.hotspots.length > 5 ? "var(--red)" : stats.hotspots.length > 0 ? "var(--yellow)" : "var(--green)"}">${stats.hotspots.length}</div>
-      <div class="sub">risk zones</div>
-    </div>
-  </div>
-
-  <div class="grid-4" style="margin-top:-24px">
-    <div class="stat-card">
-      <div class="label">Dead Exports</div>
-      <div class="value" style="color:${stats.deadExports > 0 ? "var(--red)" : "var(--green)"}">${stats.deadExports}</div>
-      <div class="sub">unused exports</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">God Files</div>
-      <div class="value" style="color:${stats.godFiles > 0 ? "var(--yellow)" : "var(--green)"}">${stats.godFiles}</div>
-      <div class="sub">oversized modules</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Critical Nodes</div>
-      <div class="value" style="color:${stats.criticalFiles > 0 ? "var(--red)" : "var(--green)"}">${stats.criticalFiles}</div>
-      <div class="sub">high dependency</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Total Edges</div>
-      <div class="value">${result.edges.length}</div>
-      <div class="sub">import links</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Health Score</div>
-      <div class="value" style="color:var(--green)">${calculateHealthScore(stats, result)}<span style="font-size:20px;color:var(--muted)">/100</span></div>
-      <div class="sub">overall quality</div>
-    </div>
-  </div>
+  ${renderSummaryCards(stats, result)}
 
   <div class="section">
     <h2><span class="icon"></span>Project Treemap — Code Density & Complexity</h2>
@@ -355,4 +301,87 @@ ${getCss()}
 ${getScripts(stats.treemapData, stats.graphData)}
 </body>
 </html>`;
+}
+
+function getComplexityColor(avg: number): string {
+	if (avg > 15) return "var(--red)";
+	if (avg > 8) return "var(--yellow)";
+	return "var(--green)";
+}
+
+function getVulnerabilityColor(count: number): string {
+	return count > 0 ? "var(--red)" : "var(--green)";
+}
+
+function getHotspotColor(count: number): string {
+	if (count > 5) return "var(--red)";
+	if (count > 0) return "var(--yellow)";
+	return "var(--green)";
+}
+
+function renderSummaryCards(stats: any, result: any): string {
+	const healthScore = calculateHealthScore(stats, result);
+	const compColor = getComplexityColor(stats.avgComplexity);
+	const vulnColor = getVulnerabilityColor(stats.vulnerabilities);
+	const hotColor = getHotspotColor(stats.hotspots.length);
+	const deadColor = stats.deadExports > 0 ? "var(--red)" : "var(--green)";
+	const godColor = stats.godFiles > 0 ? "var(--yellow)" : "var(--green)";
+	const critColor = stats.criticalFiles > 0 ? "var(--red)" : "var(--green)";
+
+	return `
+  <div class="grid-4">
+    <div class="stat-card">
+      <div class="label">Total Files</div>
+      <div class="value">${stats.totalFiles}</div>
+      <div class="sub">JS / TS analyzed</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Lines</div>
+      <div class="value">${stats.totalLines.toLocaleString()}</div>
+      <div class="sub">lines of code</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Complexity</div>
+      <div class="value" style="color:${compColor}">${stats.avgComplexity}</div>
+      <div class="sub">cyclomatic avg</div>
+    </div>
+    <div class="stat-card" style="border-color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--border)"}">
+      <div class="label" style="color:${stats.vulnerabilities > 0 ? "var(--red)" : "var(--muted)"}">Vulnerabilities</div>
+      <div class="value" style="color:${vulnColor}">${stats.vulnerabilities}</div>
+      <div class="sub">security issues</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Hotspots</div>
+      <div class="value" style="color:${hotColor}">${stats.hotspots.length}</div>
+      <div class="sub">risk zones</div>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-top:-24px">
+    <div class="stat-card">
+      <div class="label">Dead Exports</div>
+      <div class="value" style="color:${deadColor}">${stats.deadExports}</div>
+      <div class="sub">unused exports</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">God Files</div>
+      <div class="value" style="color:${godColor}">${stats.godFiles}</div>
+      <div class="sub">oversized modules</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Critical Nodes</div>
+      <div class="value" style="color:${critColor}">${stats.criticalFiles}</div>
+      <div class="sub">high dependency</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Edges</div>
+      <div class="value">${result.edges.length}</div>
+      <div class="sub">import links</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Health Score</div>
+      <div class="value" style="color:var(--green)">${healthScore}<span style="font-size:20px;color:var(--muted)">/100</span></div>
+      <div class="sub">overall quality</div>
+    </div>
+  </div>`;
 }
