@@ -10,9 +10,11 @@ import {
 	generateBadge,
 	printDeadCode,
 	printStats,
+	runCoupling,
 	runInstallDeps,
 	runLicense,
 	runMcpServer,
+	runPrRisk,
 	runProfileCommand,
 	runScan,
 	runTimeMachineCommand,
@@ -184,11 +186,9 @@ program
 		}
 
 		// Generate agent rules files
-		const { generateAgentRules, generateGlobalAgentRules } = require("./agent-rules");
+		const { generateAllAgentRules } = require("./rules/agents/registry");
 		const targetDir = opts.dir ? path.resolve(opts.dir) : process.cwd();
-		const localRules = generateAgentRules(targetDir);
-		const globalRules = generateGlobalAgentRules();
-		const allRules = [...localRules, ...globalRules];
+		const allRules = generateAllAgentRules(targetDir);
 
 		if (allRules.length > 0) {
 			console.log(
@@ -198,7 +198,7 @@ program
 			);
 			for (const rule of allRules) {
 				console.log(
-					chalk.gray(`    ${bullet} ${rule.label}: ${rule.path}`),
+					chalk.gray(`    ${bullet} ${rule.name}: ${rule.path}`),
 				);
 			}
 		} else {
@@ -213,7 +213,7 @@ program
 		if (total > 0) {
 			console.log(
 				chalk.cyan(
-					`\n  AI agents will now proactively use CodePulse tools for code analysis.\n`,
+					`\n  AI agents (${allRules.length} supported) will now proactively use CodePulse tools for code analysis.\n`,
 				),
 			);
 		}
@@ -325,6 +325,21 @@ program
 			console.error(err);
 		}
 	});
+
+program
+	.command("coupling [dir]")
+	.description(
+		"Detect hidden dependencies between files that change together (Temporal Coupling)",
+	)
+	.action(runCoupling);
+
+program
+	.command("pr-risk")
+	.description("Evaluate architectural risk of changed files (Pull Request analysis)")
+	.option("--files <list>", "Comma-separated list of changed files")
+	.option("--stdin", "Read list of files from stdin")
+	.option("--threshold <number>", "Risk score threshold to exit with code 1 (default: 60)")
+	.action(runPrRisk);
 
 program
 	.command("badge [dir]")

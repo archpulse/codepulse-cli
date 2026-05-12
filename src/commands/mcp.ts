@@ -195,6 +195,62 @@ ${hotspots.map((h) => `- ${h.file}: Complexity ${h.complexity}, Churn ${h.churn}
 		return { content: [{ type: "text", text: summary }] };
 	},
 
+	get_file_context: async (args, absDir) => {
+		const result = await analyze(absDir, { silent: true, pro: true });
+		const filePath = args.file;
+		const relPath = path.isAbsolute(filePath)
+			? path.relative(absDir, filePath)
+			: filePath;
+
+		const fileNode = result.files.find(
+			(f) => f.path === filePath || f.relativePath === relPath,
+		);
+		const graphNode = result.graph.get(fileNode?.path || "");
+
+		if (!fileNode) {
+			return {
+				content: [{ type: "text", text: `File not found in analysis: ${relPath}` }],
+				isError: true,
+			};
+		}
+
+		const sections: string[] = [];
+		sections.push(`# Architectural Context: ${relPath}`);
+		sections.push("");
+		sections.push(`- **Complexity:** ${fileNode.complexity}`);
+		sections.push(`- **Lines:** ${fileNode.lines}`);
+		sections.push(`- **Churn:** ${fileNode.churn || 0} changes in 6 months`);
+		sections.push(`- **Centrality:** ${graphNode?.centrality || 0} (how much others depend on this)`);
+		sections.push(`- **Critical Node:** ${graphNode?.isCritical ? "YES 🔴" : "No"}`);
+		sections.push(`- **God File:** ${fileNode.isGodFile ? "YES 🔴" : "No"}`);
+
+		// Temporal Couplings
+		const couplings = result.temporalCouplings?.filter(
+			(c) => c.fileA === relPath || c.fileB === relPath,
+		);
+		if (couplings && couplings.length > 0) {
+			sections.push("");
+			sections.push(`## 🔗 Temporal Couplings (Changes together with)`);
+			for (const c of couplings.slice(0, 5)) {
+				const other = c.fileA === relPath ? c.fileB : c.fileA;
+				sections.push(`- **${other}**: ${Math.round(c.couplingDegree * 100)}% co-change rate`);
+			}
+		}
+
+		// Dependencies
+		const incoming = result.edges.filter((e) => e.to === fileNode.path);
+		const outgoing = result.edges.filter((e) => e.from === fileNode.path);
+
+		sections.push("");
+		sections.push(`## 🏗️ Structural Dependencies`);
+		sections.push(`- **Imported by:** ${incoming.length} files`);
+		sections.push(`- **Imports:** ${outgoing.length} files`);
+
+		return {
+			content: [{ type: "text", text: sections.join("\n") }],
+		};
+	},
+
 	list_plugins: async () => {
 		const { listPlugins } = await import("../utils/plugins");
 		const plugins = await listPlugins();
@@ -353,6 +409,31 @@ const TOOL_DEFINITIONS = [
 					description: "The directory path to analyze.",
 				},
 			},
+		},
+	},
+	{
+		name: "get_file_context",
+		description: [
+			"Get deep architectural and historical context for a specific file.",
+			"USE THIS when you are about to edit a file and want to understand its risks.",
+			"Returns complexity, centrality, temporal coupling (files that change with it),",
+			"and whether it's a God File or Critical Node.",
+			"This is the best way to avoid breaking architectural boundaries or ignoring",
+			"hidden dependencies during a task.",
+		].join(" "),
+		inputSchema: {
+			type: "object",
+			properties: {
+				file: {
+					type: "string",
+					description: "The relative or absolute path of the file to investigate.",
+				},
+				dir: {
+					type: "string",
+					description: "The project directory.",
+				},
+			},
+			required: ["file"],
 		},
 	},
 	{

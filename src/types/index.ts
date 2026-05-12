@@ -35,6 +35,15 @@ export interface Hotspot {
 	churn: number;
 }
 
+export interface TemporalCoupling {
+	fileA: string;
+	fileB: string;
+	coChanges: number;
+	totalA: number;
+	totalB: number;
+	couplingDegree: number;
+}
+
 export interface FunctionNode {
 	name: string;
 	startLine: number;
@@ -85,6 +94,7 @@ export interface AnalysisResult {
 	godFiles: FileNode[];
 	criticalFiles: GraphNode[];
 	hotspots: Hotspot[];
+	temporalCouplings?: TemporalCoupling[];
 	totalFiles: number;
 	totalLines: number;
 	avgComplexity: number;

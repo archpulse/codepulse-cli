@@ -11,7 +11,12 @@ import type {
 } from "../types/index";
 import { loadPlugins } from "../utils/plugins";
 import { analyzeFile } from "./ast";
-import { calculateHotspots, getGitChurn } from "./git";
+import {
+	type TemporalCoupling,
+	calculateHotspots,
+	getGitChurn,
+	getTemporalCoupling,
+} from "./git";
 import { buildGraph, detectDeadExports } from "./graph";
 import { scanFiles } from "./scanner";
 
@@ -166,6 +171,11 @@ export async function analyze(
 	const deadExports = detectDeadExports(files, edges);
 	const godFiles = files.filter((f) => f.isGodFile);
 	const hotspots = calculateHotspots(files);
+	let temporalCouplings: TemporalCoupling[] | undefined;
+
+	if (options.pro) {
+		temporalCouplings = getTemporalCoupling(dir);
+	}
 
 	for (const node of graph.values()) {
 		node.isCritical = node.inDegree >= (config.criticalNodeThreshold || 10);
@@ -192,6 +202,7 @@ export async function analyze(
 		godFiles,
 		criticalFiles,
 		hotspots,
+		temporalCouplings,
 		totalFiles: files.length,
 		totalLines,
 		avgComplexity,

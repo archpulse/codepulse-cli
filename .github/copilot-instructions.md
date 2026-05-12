@@ -30,11 +30,16 @@ and computes cyclomatic complexity metrics — all fully offline.
 - Call `explain_concept` with the issue type (e.g., `god-file`, `high-complexity`,
   `critical-node`, `vulnerability`) to understand what it means and how to fix it.
 
+### Before Editing a Specific File
+- **ALWAYS** call `get_file_context` for the file you are about to modify. It will reveal
+  hidden dependencies (temporal coupling) and architectural risks specific to that file.
+
 ## Available Tools
 
 | Tool | When to Use |
 |------|-------------|
 | `codepulse_identity` | **First call** in any session — project health check |
+| `get_file_context` | Before editing any specific file — get file-specific risks |
 | `analyze_project` | Before refactoring, code review, or quality assessment |
 | `get_hotspots` | Before deciding what to refactor first |
 | `find_dead_code` | When cleaning up unused exports |
