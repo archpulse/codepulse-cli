@@ -44,7 +44,7 @@ codepulse watch .
 
 ---
 
-## 🏆 Avantage Concurrentiel
+## 🏆 Avantage Concurrentiel (Rapport d'analyse par Mythos)
 
 CodePulse est le seul outil qui unifie l'analyse statique AST, l'analyse Git du churn et du couplage, une Time Machine pour visualiser la dégradation architecturale, la corrélation avec le profiler d'exécution et une intégration native MCP pour les flux de travail des agents IA. Ni SonarQube, ni CodeClimate, ni ESLint n'offrent cette combinaison de « comment c'était, comment c'est maintenant et que faire immédiatement via l'IA ».
 

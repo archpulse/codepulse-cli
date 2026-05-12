@@ -44,7 +44,7 @@ codepulse watch .
 
 ---
 
-## 🏆 Wettbewerbsvorteil
+## 🏆 Wettbewerbsvorteil (Forschungsbericht von Mythos)
 
 CodePulse ist das einzige Tool, das AST-statische Analyse, Git-basierte Churn- & Kopplungs-Analyse, eine Time Machine zur Verfolgung architektonischer Verschlechterung, Runtime-Profiler-Korrelation und eine native MCP-Integration für KI-Agenten-Workflows nahtlos vereint. Weder SonarQube, noch CodeClimate, noch ESLint bieten diese Kombination aus "wie es war, wie es ist und was man jetzt sofort per KI dagegen tun kann".
 

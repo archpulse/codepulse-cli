@@ -44,7 +44,7 @@ codepulse watch .
 
 ---
 
-## 🏆 경쟁 우위
+## 🏆 경쟁 우위 (Mythos의 연구 보고서)
 
 CodePulse는 AST 정적 분석, Git 기반 churn 및 결합 분석, 아키텍처 저하 추적을 위한 Time Machine, 런타임 프로파일러 상관관계, 그리고 AI 에이전트 워크플로우를 위한 네이티브 MCP 통합을 매끄럽게 결합한 유일한 도구입니다. SonarQube, CodeClimate 또는 ESLint는 이러한 조합을 제공하지 않으며, CodePulse만이 '과거는 어땠는지, 현재는 어떤지, 그리고 AI를 통해 지금 바로 무엇을 해야 하는지'에 대한 유일무이한 조합을 제공합니다.
 
