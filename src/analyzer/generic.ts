@@ -73,12 +73,13 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 export function analyzeGenericFile(
 	filePath: string,
 	baseDir: string,
+	contentOverride?: string,
 ): FileNode | null {
 	const ext = path.extname(filePath).toLowerCase();
 	const config = LANG_CONFIGS[ext];
 	if (!config) return null;
 
-	const init = initializeFileAnalysis(filePath, baseDir);
+	const init = initializeFileAnalysis(filePath, baseDir, contentOverride);
 	if (!init) return null;
 
 	const { content, relativePath, lines, imports, exports, functions } = init;

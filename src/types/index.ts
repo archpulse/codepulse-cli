@@ -134,3 +134,114 @@ export interface Rule {
 	enabled?: boolean;
 	run(context: AnalysisContext): Issue[];
 }
+
+// ─── Time Machine Types ──────────────────────────────────────────────
+
+/** Serialized FileNode without the heavy `content` field, for cache storage. */
+export interface SerializedFileNode {
+	relativePath: string;
+	imports: string[];
+	exports: string[];
+	functions: FunctionNode[];
+	lines: number;
+	complexity: number;
+}
+
+/** On-disk cache for the Time Machine incremental engine. */
+export interface TimeMachineCache {
+	version: number;
+	/** content-hash (SHA-256) → serialized FileNode */
+	astByHash: Record<string, SerializedFileNode>;
+}
+
+/** A single commit snapshot with its dependency graph and stats. */
+export interface CommitSnapshot {
+	sha: string;
+	date: string;
+	author: string;
+	message: string;
+	/** relativePath → content-hash */
+	fileHashes: Record<string, string>;
+	graph: {
+		nodes: GraphNode[];
+		edges: DependencyEdge[];
+	};
+	stats: {
+		files: number;
+		totalLines: number;
+		avgComplexity: number;
+	};
+}
+
+/** Git diff entry with rename detection. */
+export interface DiffEntry {
+	status: "A" | "M" | "D" | "R";
+	oldPath?: string;
+	newPath: string;
+	similarity?: number;
+}
+
+export type SamplingStrategy =
+	| { type: "every-nth"; n: number }
+	| { type: "date-interval"; interval: "daily" | "weekly" | "monthly" }
+	| { type: "tag-only" }
+	| { type: "max-points"; count: number };
+
+/** Result of the full Time Machine analysis across sampled commits. */
+export interface TimeMachineResult {
+	snapshots: CommitSnapshot[];
+	totalCommitsScanned: number;
+	totalParseOperations: number;
+	cacheHits: number;
+}
+
+// ─── Runtime Profiler Correlation Types ──────────────────────────────
+
+/** Normalized entry parsed from a .cpuprofile or cProfile output. */
+export interface ProfileEntry {
+	functionName: string;
+	filePath?: string;
+	fileName?: string;
+	lineNumber?: number;
+	selfTime: number;
+	totalTime: number;
+}
+
+/** How confident the match is between a profile entry and an AST function. */
+export type MatchConfidence =
+	| "exact"
+	| "filename"
+	| "line-range"
+	| "name-only"
+	| "fuzzy";
+
+/** A matched pair of profile entry + AST function node. */
+export interface MatchResult {
+	entry: ProfileEntry;
+	functionNode: FunctionNode;
+	file: string;
+	confidence: MatchConfidence;
+}
+
+/** The debt category for a matched hotspot. */
+export type DebtCategory = "active-hotspot" | "dormant-debt" | "io-bound";
+
+/** Performance-Heavy Technical Debt score for a single function. */
+export interface DebtScore {
+	file: string;
+	functionName: string;
+	complexity: number;
+	selfTimeMs: number;
+	totalTimeMs: number;
+	matchConfidence: MatchConfidence;
+	debtScore: number;
+	category: DebtCategory;
+}
+
+/** Full result of a profiler correlation run. */
+export interface ProfileCorrelationResult {
+	matched: DebtScore[];
+	unmatchedEntries: ProfileEntry[];
+	totalProfileEntries: number;
+	matchRate: number;
+}

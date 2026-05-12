@@ -24,14 +24,15 @@ const GENERIC_EXTENSIONS = new Set([
 export function analyzeFile(
 	filePath: string,
 	baseDir: string,
+	contentOverride?: string,
 ): FileNode | null {
 	const ext = path.extname(filePath).toLowerCase();
 
-	if (PYTHON_EXTENSIONS.has(ext)) return analyzePythonFile(filePath, baseDir);
-	if (GENERIC_EXTENSIONS.has(ext)) return analyzeGenericFile(filePath, baseDir);
+	if (PYTHON_EXTENSIONS.has(ext)) return analyzePythonFile(filePath, baseDir, contentOverride);
+	if (GENERIC_EXTENSIONS.has(ext)) return analyzeGenericFile(filePath, baseDir, contentOverride);
 	if (!JS_EXTENSIONS.has(ext)) return null;
 
-	const init = initializeFileAnalysis(filePath, baseDir);
+	const init = initializeFileAnalysis(filePath, baseDir, contentOverride);
 	if (!init) return null;
 
 	const { content, relativePath, lines, imports, exports, functions } = init;

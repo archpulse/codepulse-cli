@@ -9,6 +9,7 @@ export const GOD_FILE_IMPORTS = 15;
 export function initializeFileAnalysis(
 	filePath: string,
 	baseDir: string,
+	contentOverride?: string,
 ): {
 	content: string;
 	relativePath: string;
@@ -17,7 +18,7 @@ export function initializeFileAnalysis(
 	exports: string[];
 	functions: FunctionNode[];
 } | null {
-	const content = readFile(filePath);
+	const content = contentOverride ?? readFile(filePath);
 	if (!content) return null;
 
 	const relativePath = path.relative(baseDir, filePath);

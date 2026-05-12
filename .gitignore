@@ -8,8 +8,9 @@ build/
 /app/dist/
 /app/.vite/
 
-# CodePulse Reports
+# CodePulse Reports & Cache
 .codepulse-report/
+.codepulse-cache/
 
 # Environment secrets
 .env

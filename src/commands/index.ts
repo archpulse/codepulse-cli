@@ -3,5 +3,7 @@ export * from "./install-deps";
 export * from "./license";
 export * from "./mcp";
 export * from "./output";
+export * from "./profile";
 export * from "./scan";
+export * from "./time-machine";
 export * from "./watch";

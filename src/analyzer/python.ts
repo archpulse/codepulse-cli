@@ -4,8 +4,9 @@ import { createFileNode, initializeFileAnalysis } from "./utils";
 export function analyzePythonFile(
 	filePath: string,
 	baseDir: string,
+	contentOverride?: string,
 ): FileNode | null {
-	const init = initializeFileAnalysis(filePath, baseDir);
+	const init = initializeFileAnalysis(filePath, baseDir, contentOverride);
 	if (!init) return null;
 
 	const { content, relativePath, lines, imports, exports, functions } = init;

@@ -13,7 +13,9 @@ import {
 	runInstallDeps,
 	runLicense,
 	runMcpServer,
+	runProfileCommand,
 	runScan,
+	runTimeMachineCommand,
 	runWatch,
 	saveBadge,
 } from "./commands";
@@ -147,22 +149,75 @@ program
 
 program
 	.command("setup-mcp")
-	.description("Manually trigger automatic MCP configuration for AI agents")
-	.action(() => {
-		const count = setupMcpConfigs();
-		if (count > 0) {
+	.description(
+		"Configure CodePulse as MCP server for AI agents + generate agent rules files",
+	)
+	.option(
+		"--rules-only",
+		"Only generate agent rules files (.clinerules, .cursorrules, etc.) without MCP config",
+	)
+	.option(
+		"--dir <dir>",
+		"Target directory for rules files (default: current directory)",
+	)
+	.action((opts) => {
+		const isWinLocal = process.platform === "win32";
+		const checkMark = isWinLocal ? "v" : "✓";
+		const bullet = isWinLocal ? "*" : "•";
+
+		let mcpCount = 0;
+		if (!opts.rulesOnly) {
+			mcpCount = setupMcpConfigs();
+			if (mcpCount > 0) {
+				console.log(
+					chalk.green(
+						`\n  ${checkMark} Configured CodePulse as MCP server for ${mcpCount} AI agent(s)`,
+					),
+				);
+			} else {
+				console.log(
+					chalk.yellow(
+						"\n  ! No supported AI agent configurations found on this system.",
+					),
+				);
+			}
+		}
+
+		// Generate agent rules files
+		const { generateAgentRules, generateGlobalAgentRules } = require("./agent-rules");
+		const targetDir = opts.dir ? path.resolve(opts.dir) : process.cwd();
+		const localRules = generateAgentRules(targetDir);
+		const globalRules = generateGlobalAgentRules();
+		const allRules = [...localRules, ...globalRules];
+
+		if (allRules.length > 0) {
 			console.log(
 				chalk.green(
-					`\n  ✓ Successfully configured CodePulse as an MCP server for ${count} AI agent(s)!\n`,
+					`\n  ${checkMark} Generated agent rules files:`,
 				),
 			);
+			for (const rule of allRules) {
+				console.log(
+					chalk.gray(`    ${bullet} ${rule.label}: ${rule.path}`),
+				);
+			}
 		} else {
 			console.log(
-				chalk.yellow(
-					"\n  ! No supported AI agent configurations found on this system.\n",
+				chalk.gray(
+					"\n  All agent rules files already contain CodePulse instructions.",
 				),
 			);
 		}
+
+		const total = mcpCount + allRules.length;
+		if (total > 0) {
+			console.log(
+				chalk.cyan(
+					`\n  AI agents will now proactively use CodePulse tools for code analysis.\n`,
+				),
+			);
+		}
+		console.log("");
 	});
 
 program
@@ -367,6 +422,41 @@ function explainTopic(topic: string, sym: any) {
 
 	console.log(`\n${chalk.gray(sym.line.repeat(52))}\n`);
 }
+
+program
+	.command("time-machine [dir]")
+	.description(
+		"Build dependency graph history across git commits (Time Machine)",
+	)
+	.option(
+		"--commits <number>",
+		"Number of commit points to sample (default: 30)",
+	)
+	.option(
+		"--strategy <type>",
+		"Sampling strategy: max-points, every-nth, interval, tag-only",
+	)
+	.option(
+		"--interval <period>",
+		"For interval strategy: daily, weekly, monthly",
+	)
+	.option("--since <date>", "Only analyze commits after this date")
+	.option("--json", "Output as JSON")
+	.action(runTimeMachineCommand);
+
+program
+	.command("profile <file>")
+	.description(
+		"Correlate profiler data (.cpuprofile, .prof) with code complexity",
+	)
+	.option("-d, --dir <dir>", "Project directory (default: current)")
+	.option(
+		"--lang <language>",
+		"Force language: js, ts, py (auto-detected by default)",
+	)
+	.option("--top <number>", "Number of top hotspots to show (default: 20)")
+	.option("--json", "Output as JSON")
+	.action(runProfileCommand);
 
 const plugins = program
 	.command("plugins")
