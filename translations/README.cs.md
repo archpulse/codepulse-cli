@@ -44,6 +44,10 @@ codepulse watch .
 
 ---
 
+## 🏆 Konkurenční výhoda
+
+CodePulse je jediný nástroj, který hladce sjednocuje **statickou analýzu AST**, **Git-analýzu churnu a vazeb**, **Time Machine pro sledování architektonické degradace**, **korelaci s runtime profilerem** a **nativní MCP integraci pro pracovní postupy AI agentů**. Zatímco nástroje jako SonarQube, CodeClimate nebo ESLint poskytují standardní linting, CodePulse dodává "chyějící článek": holistický pohled na to, **jaký byl kód v minulosti, jaký je nyní a jak ho opravit okamžitě s pomocí AI.** Nehlásíme jen technický dluh – proaktivně identifikujeme nejúčinnější cesty refaktoringu, abychom udrželi vaši architekturu zdravou.
+
 ## 🎯 Hlavní funkce
 
 | Funkce | Popis |
