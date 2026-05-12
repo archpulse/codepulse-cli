@@ -56,7 +56,7 @@ codepulse scan .
 | Příkaz | Popis |
 |---------|-------------|
 | `codepulse scan [dir]` | Kompletní analýza + HTML report + SARIF |
-| `codepulse plugins [dir]` | Seznam všech dostupných modulů plug-in s metadaty |
+| `codepulse plugins list` | Seznam všech dostupných modulů plug-in s metadaty |
 | `codepulse license <type> [name]` | Vygenerovat soubor LICENSE (mit, apache, bsd...) |
 | `codepulse stats [dir]` | Rychlé statistiky v konzoli |
 | `codepulse explain [topic]` | Detailní vysvětlení problémů |

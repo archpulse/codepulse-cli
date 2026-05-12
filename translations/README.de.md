@@ -56,7 +56,7 @@ codepulse scan .
 | Befehl | Beschreibung |
 |---------|-------------|
 | `codepulse scan [dir]` | Vollständige Analyse + HTML-Bericht + SARIF |
-| `codepulse plugins [dir]` | Liste aller verfügbaren Plugins mit Metadaten |
+| `codepulse plugins list` | Liste aller verfügbaren Plugins mit Metadaten |
 | `codepulse license <type> [name]` | Generieren Sie eine LICENSE-Datei (mit, apache, bsd...) |
 | `codepulse stats [dir]` | Schnelle Statistiken in der Konsole |
 | `codepulse explain [topic]` | Detaillierte Erläuterung von Problemen |

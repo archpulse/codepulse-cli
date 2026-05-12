@@ -56,7 +56,7 @@ codepulse scan .
 | 명령어 | 설명 |
 |---------|-------------|
 | `codepulse scan [dir]` | 전체 분석 + HTML 보고서 + SARIF |
-| `codepulse plugins [dir]` | 메타데이터가 포함된 모든 사용 가능한 플러그인 목록 |
+| `codepulse plugins list` | 메타데이터가 포함된 모든 사용 가능한 플러그인 목록 |
 | `codepulse license <type> [name]` | LICENSE 파일 생성 (mit, apache, bsd...) |
 | `codepulse stats [dir]` | 콘솔에서 빠른 통계 확인 |
 | `codepulse explain [topic]` | 문제에 대한 상세 설명 |

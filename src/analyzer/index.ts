@@ -131,7 +131,7 @@ export async function analyze(
 		: 0;
 
 	const context: AnalysisContext = { files, graph, edges, config };
-	const externalRules = await loadPlugins(dir);
+	const externalRules = await loadPlugins();
 	const issues = runRules(context, { strict: options.strict }, externalRules);
 
 	return {

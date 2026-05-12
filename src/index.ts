@@ -348,14 +348,17 @@ program
 		console.log(`\n${chalk.gray(sym.line.repeat(52))}\n`);
 	});
 
-program
-	.command("plugins [dir]")
+const plugins = program
+	.command("plugins")
+	.description("Manage and list custom analysis plugins");
+
+plugins
+	.command("list")
 	.description("List all available plugins with metadata")
 	.option("--json", "Output as JSON")
-	.action(async (dir = ".", opts) => {
-		const absDir = path.resolve(dir);
+	.action(async (opts) => {
 		try {
-			const plugins = await listPlugins(absDir);
+			const plugins = await listPlugins();
 
 			if (opts.json) {
 				console.log(JSON.stringify(plugins, null, 2));

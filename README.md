@@ -58,7 +58,7 @@ codepulse scan .
 | Command | Description |
 |---------|-------------|
 | `codepulse scan [dir]` | Full analysis + HTML report + SARIF |
-| `codepulse plugins [dir]` | List all available plugins with metadata |
+| `codepulse plugins list` | List all available plugins with metadata |
 | `codepulse license <type> [name]` | Generate a LICENSE file (mit, apache, bsd...) |
 | `codepulse stats [dir]` | Quick stats in console |
 | `codepulse explain [topic]` | Detailed explanation of issues |
@@ -67,11 +67,11 @@ codepulse scan .
 
 ## Plugin System
 
-CodePulse has a powerful plugin system for custom analysis. Create a `plugins/` directory in your project and add `.ts` or `.js` files that implement the `Rule` interface:
+CodePulse has a powerful plugin system for custom analysis. Create a `~/.config/codepulse/plugins` directory and add `.ts` or `.js` files that implement the `Rule` interface:
 
 ```typescript
-import { Rule } from '../src/rules/rule';
-import { AnalysisContext, Issue } from '../src/types';
+import { Rule, AnalysisContext, Issue } from '@archpulse/codepulse';
+
 
 export default class MyPlugin implements Rule {
   name = 'my-plugin';
@@ -89,8 +89,8 @@ export default class MyPlugin implements Rule {
 
 View loaded plugins:
 ```bash
-codepulse plugins .
-codepulse plugins . --json
+codepulse plugins list
+codepulse plugins list --json
 ```
 
 [Learn more about plugins →](./docs/PLUGINS.md)

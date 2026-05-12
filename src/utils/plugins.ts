@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import chalk from "chalk";
 import type { Rule } from "../rules/rule";
@@ -14,13 +15,28 @@ export interface PluginInfo {
 	rule: Rule;
 }
 
-export async function loadPlugins(dir: string): Promise<Rule[]> {
-	const pluginsDir = path.join(dir, "plugins");
-	const rules: Rule[] = [];
+function getPluginsDir(): string {
+	const home = os.homedir();
+	let baseDir: string;
 
-	if (!fs.existsSync(pluginsDir)) {
-		return [];
+	if (process.platform === "win32") {
+		baseDir = process.env.APPDATA || path.join(home, "AppData", "Roaming");
+	} else if (process.platform === "darwin") {
+		baseDir = path.join(home, "Library", "Application Support");
+	} else {
+		baseDir = path.join(home, ".config");
 	}
+
+	const pluginsDir = path.join(baseDir, "codepulse", "plugins");
+	if (!fs.existsSync(pluginsDir)) {
+		fs.mkdirSync(pluginsDir, { recursive: true });
+	}
+	return pluginsDir;
+}
+
+export async function loadPlugins(): Promise<Rule[]> {
+	const pluginsDir = getPluginsDir();
+	const rules: Rule[] = [];
 
 	const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 
@@ -51,13 +67,9 @@ export async function loadPlugins(dir: string): Promise<Rule[]> {
 	return rules;
 }
 
-export async function listPlugins(dir: string): Promise<PluginInfo[]> {
-	const pluginsDir = path.join(dir, "plugins");
+export async function listPlugins(): Promise<PluginInfo[]> {
+	const pluginsDir = getPluginsDir();
 	const plugins: PluginInfo[] = [];
-
-	if (!fs.existsSync(pluginsDir)) {
-		return [];
-	}
 
 	const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 

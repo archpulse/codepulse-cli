@@ -2,10 +2,18 @@
 
 Extend CodePulse analysis with your own custom rules. Plugins have full access to the project's AST metadata, dependency graph, and configuration.
 
+## 📂 Plugin Locations
+
+CodePulse loads plugins from a global directory based on your operating system:
+
+- **Linux**: `~/.config/codepulse/plugins`
+- **macOS**: `~/Library/Application Support/codepulse/plugins`
+- **Windows**: `%APPDATA%\codepulse\plugins`
+
 ## 🚀 Quick Start
 
-1. Create a `plugins/` directory in your project root.
-2. Create a TypeScript file (e.g., `plugins/my-rule.ts`):
+1. Create a `~/.config/codepulse/plugins` directory root.
+2. Create a TypeScript file (e.g., `~/.config/codepulse/plugins/my-rule.ts`):
    ```typescript
    import { Rule, AnalysisContext, Issue } from '@archpulse/codepulse';
 
@@ -26,7 +34,7 @@ Extend CodePulse analysis with your own custom rules. Plugins have full access t
      }
    }
    ```
-3. Compile to JavaScript: `tsc plugins/my-rule.ts --module commonjs`
+3. Compile to JavaScript: `tsc ~/.config/codepulse/plugins/my-rule.ts --module commonjs`
 4. Run: `codepulse scan .`
 
 ## 🛠 The `Rule` Interface

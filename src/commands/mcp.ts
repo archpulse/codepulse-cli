@@ -105,14 +105,14 @@ ${hotspots.map((h) => `- ${h.file}: Complexity ${h.complexity}, Churn ${h.churn}
 
 		return { content: [{ type: "text", text: summary }] };
 	},
-	list_plugins: async (_args, absDir) => {
+	list_plugins: async () => {
 		const { listPlugins } = await import("../utils/plugins");
-		const plugins = await listPlugins(absDir);
+		const plugins = await listPlugins();
 
 		const summary = `
-Loaded Plugins for ${absDir}
+Global CodePulse Plugins
 ---------------------------
-${plugins.length === 0 ? "No plugins found." : ""}
+${plugins.length === 0 ? "No plugins found in ~/.config/codepulse/plugins." : ""}
 ${plugins.map((p) => `${p.enabled ? "●" : "○"} ${p.name} v${p.version} - ${p.description}`).join("\n")}
         `.trim();
 
