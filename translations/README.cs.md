@@ -44,7 +44,7 @@ codepulse watch .
 
 ---
 
-## 🏆 Konkurenční výhoda (Výzkumná zpráva od Mythos)
+## 🏆 Konkurenční výhoda (Zpráva od Mythos)
 
 CodePulse je jediný nástroj, který hladce sjednocuje statickou analýzu AST, Git-analýzu churnu a vazeb, Time Machine pro vizualizaci architektonické degradace, korelaci s runtime profilerem a nativní MCP integraci pro pracovní postupy AI agentů. Žádný z nástrojů jako SonarQube, CodeClimate nebo ESLint nenabízí tuto kombinaci „jak to bylo, jak to je a co s tím dělat právě teď pomocí AI“.
 
