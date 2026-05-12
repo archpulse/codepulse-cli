@@ -44,17 +44,9 @@ codepulse watch .
 
 ---
 
-## 🏆 Wettbewerbsvorteil (Forschungsbericht von Mythos)
+## 🏆 Wettbewerbsvorteil
 
-CodePulse ist nicht nur ein weiterer Linter; es ist die branchenweit erste **Engine für Architektur-Intelligenz**. Während konventionelle Tools (ESLint, SonarQube, CodeClimate) sich auf symptomatische, isolierte Prüfungen auf Dateiebene konzentrieren, liefert CodePulse eine ganzheitliche architektonische Sicht durch die Zusammenführung von fünf kritischen Datenbereichen:
-
-*   **Strukturelle AST-Analyse:** Tiefgehendes semantisches Verständnis von Codemodulen.
-*   **Git-temporale Analytik:** Verfolgt "versteckte" Kopplungen über die Änderungshistorie (Churn & Co-Change-Raten).
-*   **Historische Time Machine:** Visualisiert architektonische Verschlechterung über die Commit-Historie hinweg.
-*   **Runtime-Korrelation:** Mappt Engpässe in der Performance auf statische Codestrukturen.
-*   **Native MCP-Intelligenz:** Liefert LLMs den strukturellen Kontext, der für präzises, agentengesteuertes Refactoring erforderlich ist.
-
-**Das "fehlende Glied":** Im Zeitalter der KI-nativen Entwicklung ist die Qualität des Outputs einer KI durch den Kontext begrenzt, den sie erhält. CodePulse fungiert als primärer **Anbieter für architektonischen Kontext**. Wir gehen über die bloße Meldung technischer Schulden hinaus, indem wir proaktiv die wirkungsvollsten Refactoring-Pfade identifizieren und die präzise strukturelle Karte bereitstellen, die LLMs benötigen, um Architekturprobleme mit chirurgischer Genauigkeit zu beheben.
+CodePulse ist das einzige Tool, das AST-statische Analyse, Git-basierte Churn- & Kopplungs-Analyse, eine Time Machine zur Verfolgung architektonischer Verschlechterung, Runtime-Profiler-Korrelation und eine native MCP-Integration für KI-Agenten-Workflows nahtlos vereint. Weder SonarQube, noch CodeClimate, noch ESLint bieten diese Kombination aus "wie es war, wie es ist und was man jetzt sofort per KI dagegen tun kann".
 
 ## 🎯 Hauptfunktionen
 
