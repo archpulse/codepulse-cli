@@ -2,9 +2,7 @@ import { createHash } from "node:crypto";
 import * as path from "node:path";
 import type {
 	CommitSnapshot,
-	DependencyEdge,
 	FileNode,
-	GraphNode,
 	SamplingStrategy,
 	SerializedFileNode,
 	TimeMachineCache,
@@ -28,8 +26,16 @@ import {
 import { sampleCommits } from "./sampling";
 
 const SUPPORTED_EXTENSIONS = new Set([
-	".ts", ".tsx", ".js", ".jsx", ".py",
-	".java", ".cpp", ".c", ".cs", ".lua",
+	".ts",
+	".tsx",
+	".js",
+	".jsx",
+	".py",
+	".java",
+	".cpp",
+	".c",
+	".cs",
+	".lua",
 ]);
 
 export interface TimeMachineOptions {
@@ -187,60 +193,72 @@ function incrementalCommit(
 	prevFileHashes: Map<string, string>,
 	cache: TimeMachineCache,
 ): ProcessResult {
-	const currentFileHashes = new Map(prevFileHashes);
+	const context: IncrementalContext = {
+		dir,
+		curSha,
+		currentFileHashes: new Map(prevFileHashes),
+		cache,
+		parseCount: 0,
+		cacheHitCount: 0,
+	};
+
 	const diff = getCommitDiff(dir, prevSha, curSha);
-	let parseCount = 0;
-	let cacheHitCount = 0;
 
 	for (const entry of diff) {
-		switch (entry.status) {
-			case "D":
-				currentFileHashes.delete(entry.newPath);
-				break;
-
-			case "A":
-			case "M": {
-				if (!isSupportedFile(entry.newPath)) break;
-				const content = getFileAtCommit(dir, curSha, entry.newPath);
-				if (!content) break;
-
-				const hash = contentHash(content);
-				currentFileHashes.set(entry.newPath, hash);
-
-				if (getCachedAST(cache, hash)) {
-					cacheHitCount++;
-				} else {
-					const node = parseAndCache(entry.newPath, dir, content, hash, cache);
-					if (node) parseCount++;
-				}
-				break;
-			}
-
-			case "R": {
-				// Remove old path entry
-				if (entry.oldPath) {
-					currentFileHashes.delete(entry.oldPath);
-				}
-				// Process new path (may be identical content = cache hit)
-				if (!isSupportedFile(entry.newPath)) break;
-				const content = getFileAtCommit(dir, curSha, entry.newPath);
-				if (!content) break;
-
-				const hash = contentHash(content);
-				currentFileHashes.set(entry.newPath, hash);
-
-				if (getCachedAST(cache, hash)) {
-					cacheHitCount++;
-				} else {
-					const node = parseAndCache(entry.newPath, dir, content, hash, cache);
-					if (node) parseCount++;
-				}
-				break;
-			}
-		}
+		processDiffEntry(entry, context);
 	}
 
-	return { fileHashes: currentFileHashes, parseCount, cacheHitCount };
+	return {
+		fileHashes: context.currentFileHashes,
+		parseCount: context.parseCount,
+		cacheHitCount: context.cacheHitCount,
+	};
+}
+
+interface IncrementalContext {
+	dir: string;
+	curSha: string;
+	currentFileHashes: Map<string, string>;
+	cache: TimeMachineCache;
+	parseCount: number;
+	cacheHitCount: number;
+}
+
+function processDiffEntry(entry: any, ctx: IncrementalContext) {
+	switch (entry.status) {
+		case "D":
+			ctx.currentFileHashes.delete(entry.newPath);
+			break;
+
+		case "A":
+		case "M":
+			updateFileInContext(entry.newPath, ctx);
+			break;
+
+		case "R":
+			if (entry.oldPath) {
+				ctx.currentFileHashes.delete(entry.oldPath);
+			}
+			updateFileInContext(entry.newPath, ctx);
+			break;
+	}
+}
+
+function updateFileInContext(filePath: string, ctx: IncrementalContext) {
+	if (!isSupportedFile(filePath)) return;
+
+	const content = getFileAtCommit(ctx.dir, ctx.curSha, filePath);
+	if (!content) return;
+
+	const hash = contentHash(content);
+	ctx.currentFileHashes.set(filePath, hash);
+
+	if (getCachedAST(ctx.cache, hash)) {
+		ctx.cacheHitCount++;
+	} else {
+		const node = parseAndCache(filePath, ctx.dir, content, hash, ctx.cache);
+		if (node) ctx.parseCount++;
+	}
 }
 
 /**

@@ -24,68 +24,79 @@ export function parseV8Profile(
 	const nodes: any[] = profile.nodes ?? [];
 	const samplingInterval = (profile.samplingInterval ?? 1000) / 1000; // µs → ms
 
-	// Build a set of child IDs to compute total vs self later
-	const childIds = new Set<number>();
 	for (const node of nodes) {
-		for (const childId of node.children ?? []) {
-			childIds.add(childId);
+		const entry = processNode(node, samplingInterval, projectDir);
+		if (entry) {
+			entries.push(entry);
 		}
 	}
 
-	for (const node of nodes) {
-		const cf = node.callFrame;
-		if (!cf || !cf.functionName) continue;
-
-		// Skip V8 internals and GC
-		const name = cf.functionName;
-		if (
-			name === "(idle)" ||
-			name === "(program)" ||
-			name === "(garbage collector)" ||
-			name === ""
-		) {
-			continue;
-		}
-
-		const hitCount = node.hitCount ?? 0;
-		const selfTime = hitCount * samplingInterval;
-
-		// Normalize URL/path
-		let filePath: string | undefined;
-		let fileName: string | undefined;
-
-		if (cf.url) {
-			let url = cf.url as string;
-			// Strip file:// protocol
-			if (url.startsWith("file://")) {
-				url = url.slice(7);
-			}
-			// Try to make it relative to project
-			if (projectDir) {
-				try {
-					const relative = path.relative(projectDir, url);
-					if (!relative.startsWith("..")) {
-						filePath = relative.replace(/\\/g, "/");
-					}
-				} catch {
-					// Keep as-is
-				}
-			}
-			fileName = path.basename(url);
-		}
-
-		entries.push({
-			functionName: name,
-			filePath,
-			fileName,
-			lineNumber: cf.lineNumber !== undefined ? cf.lineNumber + 1 : undefined, // V8 uses 0-based
-			selfTime,
-			totalTime: selfTime, // Approximation; real totalTime requires tree walk
-		});
-	}
-
-	// Aggregate entries by function identity (same name + same file + same line)
 	return aggregateEntries(entries);
+}
+
+function shouldSkipFunction(name: string): boolean {
+	return (
+		!name ||
+		name === "(idle)" ||
+		name === "(program)" ||
+		name === "(garbage collector)" ||
+		name === ""
+	);
+}
+
+function normalizeFilePath(
+	url: string | undefined,
+	projectDir?: string,
+): { filePath?: string; fileName?: string } {
+	if (!url) return {};
+
+	let processedUrl = url;
+	if (processedUrl.startsWith("file://")) {
+		processedUrl = processedUrl.slice(7);
+	}
+
+	let filePath: string | undefined;
+	if (projectDir) {
+		try {
+			const relative = path.relative(projectDir, processedUrl);
+			if (!relative.startsWith("..")) {
+				filePath = relative.replace(/\\/g, "/");
+			}
+		} catch {
+			// Keep as-is
+		}
+	}
+
+	return {
+		filePath,
+		fileName: path.basename(processedUrl),
+	};
+}
+
+function processNode(
+	node: any,
+	samplingInterval: number,
+	projectDir?: string,
+): ProfileEntry | null {
+	const cf = node.callFrame;
+	if (!cf?.functionName) return null;
+
+	if (shouldSkipFunction(cf.functionName)) {
+		return null;
+	}
+
+	const hitCount = node.hitCount ?? 0;
+	const selfTime = hitCount * samplingInterval;
+	const { filePath, fileName } = normalizeFilePath(cf.url, projectDir);
+
+	return {
+		functionName: cf.functionName,
+		filePath,
+		fileName,
+		lineNumber: cf.lineNumber !== undefined ? cf.lineNumber + 1 : undefined,
+		selfTime,
+		totalTime: selfTime,
+	};
 }
 
 /**

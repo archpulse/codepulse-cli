@@ -67,10 +67,11 @@ export function getCommitDiff(
 	toSha: string,
 ): DiffEntry[] {
 	try {
-		const output = execSync(
-			`git diff --name-status -M90 ${fromSha} ${toSha}`,
-			{ cwd: dir, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
-		);
+		const output = execSync(`git diff --name-status -M90 ${fromSha} ${toSha}`, {
+			cwd: dir,
+			encoding: "utf-8",
+			maxBuffer: 10 * 1024 * 1024,
+		});
 
 		return output
 			.trim()

@@ -1,5 +1,6 @@
 export * from "./badge";
 export * from "./coupling";
+export * from "./explain";
 export * from "./install-deps";
 export * from "./license";
 export * from "./mcp";

@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { createGzip, createGunzip } from "node:zlib";
-import { pipeline } from "node:stream/promises";
 import { Readable, Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { createGunzip, createGzip } from "node:zlib";
 import type {
 	CommitSnapshot,
 	SerializedFileNode,
@@ -24,9 +24,7 @@ export function getCacheDir(projectDir: string): string {
 /**
  * Loads the AST cache from disk. Returns an empty cache if none exists.
  */
-export async function loadCache(
-	projectDir: string,
-): Promise<TimeMachineCache> {
+export async function loadCache(projectDir: string): Promise<TimeMachineCache> {
 	const cachePath = path.join(getCacheDir(projectDir), CACHE_FILE);
 
 	if (!fs.existsSync(cachePath)) {
@@ -87,7 +85,9 @@ export function loadSnapshots(projectDir: string): CommitSnapshot[] {
 	if (!fs.existsSync(snapshotsDir)) return [];
 
 	try {
-		const files = fs.readdirSync(snapshotsDir).filter((f) => f.endsWith(".json"));
+		const files = fs
+			.readdirSync(snapshotsDir)
+			.filter((f) => f.endsWith(".json"));
 		const snapshots: CommitSnapshot[] = [];
 
 		for (const file of files) {

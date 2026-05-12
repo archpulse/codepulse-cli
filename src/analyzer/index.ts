@@ -12,10 +12,10 @@ import type {
 import { loadPlugins } from "../utils/plugins";
 import { analyzeFile } from "./ast";
 import {
-	type TemporalCoupling,
 	calculateHotspots,
 	getGitChurn,
 	getTemporalCoupling,
+	type TemporalCoupling,
 } from "./git";
 import { buildGraph, detectDeadExports } from "./graph";
 import { scanFiles } from "./scanner";

@@ -11,17 +11,17 @@ import {
 	printDeadCode,
 	printStats,
 	runCoupling,
+	runExplain,
 	runInstallDeps,
 	runLicense,
 	runMcpServer,
-	runPrRisk,
 	runProfileCommand,
+	runPrRisk,
 	runScan,
 	runTimeMachineCommand,
 	runWatch,
 	saveBadge,
 } from "./commands";
-import { EXPLANATIONS, type ExplainKey } from "./explain";
 import {
 	markDepsAsInstalled,
 	setupMcpConfigs,
@@ -191,15 +191,9 @@ program
 		const allRules = generateAllAgentRules(targetDir);
 
 		if (allRules.length > 0) {
-			console.log(
-				chalk.green(
-					`\n  ${checkMark} Generated agent rules files:`,
-				),
-			);
+			console.log(chalk.green(`\n  ${checkMark} Generated agent rules files:`));
 			for (const rule of allRules) {
-				console.log(
-					chalk.gray(`    ${bullet} ${rule.name}: ${rule.path}`),
-				);
+				console.log(chalk.gray(`    ${bullet} ${rule.name}: ${rule.path}`));
 			}
 		} else {
 			console.log(
@@ -335,10 +329,15 @@ program
 
 program
 	.command("pr-risk")
-	.description("Evaluate architectural risk of changed files (Pull Request analysis)")
+	.description(
+		"Evaluate architectural risk of changed files (Pull Request analysis)",
+	)
 	.option("--files <list>", "Comma-separated list of changed files")
 	.option("--stdin", "Read list of files from stdin")
-	.option("--threshold <number>", "Risk score threshold to exit with code 1 (default: 60)")
+	.option(
+		"--threshold <number>",
+		"Risk score threshold to exit with code 1 (default: 60)",
+	)
 	.action(runPrRisk);
 
 program
@@ -370,73 +369,7 @@ program
 program
 	.command("explain [topic]")
 	.description("Explain what a detected issue means and how to fix it")
-	.action((topic?: string) => {
-		const isWin = process.platform === "win32";
-		const sym = {
-			bullet: isWin ? "*" : "•",
-			cross: isWin ? "x" : "✗",
-			check: isWin ? "v" : "✓",
-			line: isWin ? "-" : "─",
-		};
-
-		if (!topic) {
-			listExplainTopics(sym);
-			return;
-		}
-
-		explainTopic(topic, sym);
-	});
-
-function listExplainTopics(sym: any) {
-	const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
-	console.log(`\n${chalk.bold.cyan("  CodePulse — Available Topics")}`);
-	console.log(`${chalk.gray(sym.line.repeat(30))}\n`);
-	for (const key of topics) {
-		const e = EXPLANATIONS[key];
-		console.log(`  ${chalk.cyan(key)}`);
-		console.log(`    ${chalk.gray(e.short)}\n`);
-	}
-	console.log(
-		chalk.gray(`  Usage: ${chalk.white("codepulse explain <topic>")}\n`),
-	);
-}
-
-function explainTopic(topic: string, sym: any) {
-	const key = topic.toLowerCase() as ExplainKey;
-	const entry = EXPLANATIONS[key];
-
-	if (!entry) {
-		const topics = Object.keys(EXPLANATIONS) as ExplainKey[];
-		console.log(chalk.red(`\n  Unknown topic: "${topic}"`));
-		console.log(chalk.gray(`  Available: ${topics.join(", ")}\n`));
-		process.exit(1);
-	}
-
-	const { full } = entry;
-
-	console.log(`\n${chalk.bold.cyan(sym.line.repeat(52))}`);
-	console.log(chalk.bold.white(`  ${key.toUpperCase().replace(/-/g, " ")}`));
-	console.log(`${chalk.cyan(sym.line.repeat(52))}\n`);
-
-	console.log(`  ${chalk.white(full.description)}\n`);
-
-	console.log(chalk.bold.yellow("  Detected when:"));
-	for (const c of full.criteria) {
-		console.log(`    ${chalk.gray(sym.bullet)} ${c}`);
-	}
-
-	console.log(`\n${chalk.bold.red("  Risks:")}`);
-	for (const r of full.risks) {
-		console.log(`    ${chalk.red(sym.cross)} ${r}`);
-	}
-
-	console.log(`\n${chalk.bold.green("  Recommended fixes:")}`);
-	for (const f of full.fix) {
-		console.log(`    ${chalk.green(sym.check)} ${f}`);
-	}
-
-	console.log(`\n${chalk.gray(sym.line.repeat(52))}\n`);
-}
+	.action(runExplain);
 
 program
 	.command("time-machine [dir]")

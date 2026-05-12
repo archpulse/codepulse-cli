@@ -28,8 +28,10 @@ export function analyzeFile(
 ): FileNode | null {
 	const ext = path.extname(filePath).toLowerCase();
 
-	if (PYTHON_EXTENSIONS.has(ext)) return analyzePythonFile(filePath, baseDir, contentOverride);
-	if (GENERIC_EXTENSIONS.has(ext)) return analyzeGenericFile(filePath, baseDir, contentOverride);
+	if (PYTHON_EXTENSIONS.has(ext))
+		return analyzePythonFile(filePath, baseDir, contentOverride);
+	if (GENERIC_EXTENSIONS.has(ext))
+		return analyzeGenericFile(filePath, baseDir, contentOverride);
 	if (!JS_EXTENSIONS.has(ext)) return null;
 
 	const init = initializeFileAnalysis(filePath, baseDir, contentOverride);

@@ -55,12 +55,7 @@ export function matchProfileToAST(
 	const unmatched: ProfileEntry[] = [];
 
 	for (const entry of entries) {
-		const result = matchSingleEntry(
-			entry,
-			byExactPath,
-			byFileName,
-			byName,
-		);
+		const result = matchSingleEntry(entry, byExactPath, byFileName, byName);
 
 		if (result) {
 			matched.push(result);
@@ -78,51 +73,88 @@ function matchSingleEntry(
 	byFileName: Map<string, IndexedFunction[]>,
 	byName: Map<string, IndexedFunction[]>,
 ): MatchResult | null {
-	// Pass 1: Exact path + name
-	if (entry.filePath) {
-		const key = `${entry.filePath}::${entry.functionName}`;
-		const candidates = byExactPath.get(key);
-		if (candidates?.length === 1) {
-			return createMatch(entry, candidates[0], "exact");
-		}
-		// If multiple candidates at same path, try line number
-		if (candidates && candidates.length > 1 && entry.lineNumber) {
-			const lineMatch = findByLineRange(candidates, entry.lineNumber);
-			if (lineMatch) return createMatch(entry, lineMatch, "exact");
-		}
+	return (
+		matchPassExact(entry, byExactPath) ||
+		matchPassFilename(entry, byFileName) ||
+		matchPassLineRange(entry, byName) ||
+		matchPassUniqueName(entry, byName) ||
+		matchPassFuzzy(entry, byName)
+	);
+}
+
+function matchPassExact(
+	entry: ProfileEntry,
+	byExactPath: Map<string, IndexedFunction[]>,
+): MatchResult | null {
+	if (!entry.filePath) return null;
+
+	const key = `${entry.filePath}::${entry.functionName}`;
+	const candidates = byExactPath.get(key);
+
+	if (candidates?.length === 1) {
+		return createMatch(entry, candidates[0], "exact");
 	}
 
-	// Pass 2: Filename + name
-	if (entry.fileName) {
-		const key = `${entry.fileName}::${entry.functionName}`;
-		const candidates = byFileName.get(key);
-		if (candidates?.length === 1) {
-			return createMatch(entry, candidates[0], "filename");
-		}
-		if (candidates && candidates.length > 1 && entry.lineNumber) {
-			const lineMatch = findByLineRange(candidates, entry.lineNumber);
-			if (lineMatch) return createMatch(entry, lineMatch, "filename");
-		}
+	if (candidates && candidates.length > 1 && entry.lineNumber) {
+		const lineMatch = findByLineRange(candidates, entry.lineNumber);
+		if (lineMatch) return createMatch(entry, lineMatch, "exact");
 	}
 
-	// Pass 3: Name + line range overlap
+	return null;
+}
+
+function matchPassFilename(
+	entry: ProfileEntry,
+	byFileName: Map<string, IndexedFunction[]>,
+): MatchResult | null {
+	if (!entry.fileName) return null;
+
+	const key = `${entry.fileName}::${entry.functionName}`;
+	const candidates = byFileName.get(key);
+
+	if (candidates?.length === 1) {
+		return createMatch(entry, candidates[0], "filename");
+	}
+
+	if (candidates && candidates.length > 1 && entry.lineNumber) {
+		const lineMatch = findByLineRange(candidates, entry.lineNumber);
+		if (lineMatch) return createMatch(entry, lineMatch, "filename");
+	}
+
+	return null;
+}
+
+function matchPassLineRange(
+	entry: ProfileEntry,
+	byName: Map<string, IndexedFunction[]>,
+): MatchResult | null {
 	const nameCandidates = byName.get(entry.functionName);
 	if (nameCandidates && entry.lineNumber) {
 		const lineMatch = findByLineRange(nameCandidates, entry.lineNumber);
 		if (lineMatch) return createMatch(entry, lineMatch, "line-range");
 	}
+	return null;
+}
 
-	// Pass 4: Unique function name
+function matchPassUniqueName(
+	entry: ProfileEntry,
+	byName: Map<string, IndexedFunction[]>,
+): MatchResult | null {
+	const nameCandidates = byName.get(entry.functionName);
 	if (nameCandidates?.length === 1) {
 		return createMatch(entry, nameCandidates[0], "name-only");
 	}
+	return null;
+}
 
-	// Pass 5: Fuzzy name match (Levenshtein ≤ 2)
+function matchPassFuzzy(
+	entry: ProfileEntry,
+	byName: Map<string, IndexedFunction[]>,
+): MatchResult | null {
 	const fuzzyMatch = findFuzzyMatch(entry.functionName, byName, 2);
 	if (fuzzyMatch) {
 		return createMatch(entry, fuzzyMatch, "fuzzy");
 	}
-
 	return null;
 }
 

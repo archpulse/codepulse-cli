@@ -52,10 +52,7 @@ function convertBinaryProfile(profilePath: string): string {
 	}
 }
 
-function parseProfileText(
-	text: string,
-	projectDir?: string,
-): ProfileEntry[] {
+function parseProfileText(text: string, projectDir?: string): ProfileEntry[] {
 	const entries: ProfileEntry[] = [];
 
 	// Match lines like:

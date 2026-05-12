@@ -112,13 +112,19 @@ function printProfileReport(result: any, topN: number): void {
 	);
 
 	if (matched.length === 0) {
-		console.log(chalk.yellow("  No matches found. Check that the profile was recorded from this project.\n"));
+		console.log(
+			chalk.yellow(
+				"  No matches found. Check that the profile was recorded from this project.\n",
+			),
+		);
 		return;
 	}
 
 	// Category breakdown
 	const categories = {
-		"active-hotspot": matched.filter((m: any) => m.category === "active-hotspot"),
+		"active-hotspot": matched.filter(
+			(m: any) => m.category === "active-hotspot",
+		),
 		"dormant-debt": matched.filter((m: any) => m.category === "dormant-debt"),
 		"io-bound": matched.filter((m: any) => m.category === "io-bound"),
 	};
@@ -132,7 +138,11 @@ function printProfileReport(result: any, topN: number): void {
 
 	// Top N hotspots
 	const topItems = matched.slice(0, topN);
-	console.log(chalk.bold.white(`  Top ${Math.min(topN, topItems.length)} Performance-Heavy Technical Debt:\n`));
+	console.log(
+		chalk.bold.white(
+			`  Top ${Math.min(topN, topItems.length)} Performance-Heavy Technical Debt:\n`,
+		),
+	);
 
 	// Table header
 	const header = `  ${"Function".padEnd(25)} ${"File".padEnd(30)} ${"CC".padStart(4)} ${"Self".padStart(8)} ${"Score".padStart(6)} Category`;
@@ -156,7 +166,9 @@ function printProfileReport(result: any, topN: number): void {
 		);
 	}
 
-	console.log(`\n  ${chalk.gray("CC = Cyclomatic Complexity, Self = Self Time")}\n`);
+	console.log(
+		`\n  ${chalk.gray("CC = Cyclomatic Complexity, Self = Self Time")}\n`,
+	);
 }
 
 function truncate(str: string, maxLen: number): string {

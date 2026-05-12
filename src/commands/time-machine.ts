@@ -1,9 +1,8 @@
 import * as path from "node:path";
 import chalk from "chalk";
 import ora from "ora";
-import type { SamplingStrategy } from "../types/index";
 import { runTimeMachine } from "../analyzer/time-machine/engine";
-import { loadSnapshots } from "../analyzer/time-machine/cache";
+import type { SamplingStrategy } from "../types/index";
 
 const isWin = process.platform === "win32";
 const sym = {
@@ -71,7 +70,10 @@ function resolveStrategy(opts: {
 
 	switch (strategyType) {
 		case "every-nth":
-			return { type: "every-nth", n: Number.parseInt(opts.commits ?? "10", 10) };
+			return {
+				type: "every-nth",
+				n: Number.parseInt(opts.commits ?? "10", 10),
+			};
 		case "interval":
 			return {
 				type: "date-interval",
@@ -79,7 +81,6 @@ function resolveStrategy(opts: {
 			};
 		case "tag-only":
 			return { type: "tag-only" };
-		case "max-points":
 		default:
 			return {
 				type: "max-points",
@@ -105,15 +106,11 @@ function printTimeMachineSummary(result: any): void {
 	console.log(
 		`  ${chalk.gray("AST parses:")}       ${chalk.white(totalParseOperations)}`,
 	);
-	console.log(
-		`  ${chalk.gray("Cache hits:")}       ${chalk.green(cacheHits)}`,
-	);
+	console.log(`  ${chalk.gray("Cache hits:")}       ${chalk.green(cacheHits)}`);
 
 	const efficiency =
 		totalParseOperations + cacheHits > 0
-			? Math.round(
-					(cacheHits / (totalParseOperations + cacheHits)) * 100,
-				)
+			? Math.round((cacheHits / (totalParseOperations + cacheHits)) * 100)
 			: 0;
 	console.log(
 		`  ${chalk.gray("Cache efficiency:")} ${chalk.green(`${efficiency}%`)}\n`,
@@ -138,15 +135,16 @@ function printTimeMachineSummary(result: any): void {
 			`  ${chalk.gray("Avg Complexity:")} ${first.stats.avgComplexity} ${sym.arrow} ${last.stats.avgComplexity}`,
 		);
 
-		const edgesDelta =
-			last.graph.edges.length - first.graph.edges.length;
+		const edgesDelta = last.graph.edges.length - first.graph.edges.length;
 		const sign = edgesDelta >= 0 ? "+" : "";
 		console.log(
 			`  ${chalk.gray("Dependencies:")} ${first.graph.edges.length} ${sym.arrow} ${last.graph.edges.length} (${chalk[edgesDelta > 0 ? "red" : "green"](`${sign}${edgesDelta}`)})`,
 		);
 	}
 
-	console.log(`\n  ${chalk.green(sym.check)} Snapshots saved to ${chalk.cyan(".codepulse-cache/snapshots/")}\n`);
+	console.log(
+		`\n  ${chalk.green(sym.check)} Snapshots saved to ${chalk.cyan(".codepulse-cache/snapshots/")}\n`,
+	);
 }
 
 function formatDate(iso: string): string {
