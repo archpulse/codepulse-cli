@@ -44,9 +44,17 @@ codepulse watch .
 
 ---
 
-## 🏆 Konkurenční výhoda
+## 🏆 Konkurenční výhoda (Výzkumná zpráva od Mythos)
 
-CodePulse je jediný nástroj, který hladce sjednocuje **statickou analýzu AST**, **Git-analýzu churnu a vazeb**, **Time Machine pro sledování architektonické degradace**, **korelaci s runtime profilerem** a **nativní MCP integraci pro pracovní postupy AI agentů**. Zatímco nástroje jako SonarQube, CodeClimate nebo ESLint poskytují standardní linting, CodePulse dodává "chyějící článek": holistický pohled na to, **jaký byl kód v minulosti, jaký je nyní a jak ho opravit okamžitě s pomocí AI.** Nehlásíme jen technický dluh – proaktivně identifikujeme nejúčinnější cesty refaktoringu, abychom udrželi vaši architekturu zdravou.
+CodePulse není jen další linter; je to první **engine pro architektonickou inteligenci** v oboru. Zatímco konvenční nástroje (ESLint, SonarQube, CodeClimate) se zaměřují na symptomatické, izolované kontroly na úrovni souborů, CodePulse přináší holistický architektonický pohled díky sjednocení pěti kritických dimenzí dat:
+
+*   **Strukturální analýza AST:** Hluboké sémantické porozumění modulům kódu.
+*   **Git-temporální analytika:** Sleduje „skryté“ vazby prostřednictvím historie změn (churn & co-change rates).
+*   **Historická Time Machine:** Vizualizuje architektonickou degradaci v historii commitů.
+*   **Korelace s Runtime:** Mapuje výkonnostní úzká hrdla na statické struktury kódu.
+*   **Nativní MCP inteligence:** Poskytuje LLM strukturní kontext nezbytný pro přesný refaktoring řízený agenty.
+
+**„Chybějící článek“:** V éře AI-native inženýrství je kvalita výstupu AI omezena kontextem, který dostává. CodePulse slouží jako primární **poskytovatel architektonického kontextu**. Jdeme nad rámec pouhého hlášení technického dluhu – proaktivně identifikujeme nejúčinnější cesty refaktoringu a poskytujeme přesnou strukturní mapu, kterou LLM potřebují k opravě architektonických problémů s chirurgickou přesností.
 
 ## 🎯 Hlavní funkce
 

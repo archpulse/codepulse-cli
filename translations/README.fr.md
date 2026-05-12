@@ -44,9 +44,17 @@ codepulse watch .
 
 ---
 
-## 🏆 Avantage Concurrentiel
+## 🏆 Avantage Concurrentiel (Rapport d'analyse par Mythos)
 
-CodePulse est le seul outil qui unifie de manière transparente l'**analyse statique AST**, l'**analyse Git du churn et du couplage**, une **Time Machine pour suivre la dégradation architecturale**, la **corrélation avec le profiler d'exécution** et une **intégration native MCP pour les flux de travail des agents IA**. Alors que des outils comme SonarQube, CodeClimate ou ESLint fournissent un linting standard, CodePulse livre le "chaînon manquant" : une vue holistique de **comment le code était, comment il est maintenant et comment le réparer immédiatement avec l'assistance de l'IA.** Nous ne nous contentons pas de signaler la dette technique – nous identifions proactivement les chemins de refactoring les plus percutants pour maintenir votre architecture saine.
+CodePulse n'est pas un simple linter ; c'est le premier **moteur d'intelligence architecturale** de l'industrie. Alors que les outils conventionnels (ESLint, SonarQube, CodeClimate) se concentrent sur des vérifications symptomatiques et isolées au niveau des fichiers, CodePulse offre une vision architecturale holistique en unifiant cinq dimensions critiques de données :
+
+*   **Analyse structurelle AST :** Compréhension sémantique approfondie des modules de code.
+*   **Analytique Git-temporelle :** Suit les couplages « cachés » via l'historique des changements (churn & taux de co-changement).
+*   **Time Machine historique :** Visualise la dégradation architecturale à travers l'historique des commits.
+*   **Corrélation avec l'exécution :** Cartographie les goulots d'étranglement de performance sur les structures de code statiques.
+*   **Intelligence native MCP :** Fournit aux LLM le contexte structurel requis pour un refactoring précis et piloté par agent.
+
+**Le « chaînon manquant » :** À l'ère de l'ingénierie native IA, la qualité de la sortie d'une IA est limitée par le contexte qu'elle reçoit. CodePulse sert de **fournisseur principal de contexte architectural**. Nous allons au-delà du simple signalement de la dette technique en identifiant proactivement les chemins de refactoring les plus percutants, fournissant la carte structurelle exacte dont les LLM ont besoin pour corriger les problèmes architecturaux avec une précision chirurgicale.
 
 ## 🎯 Fonctionnalités principales
 

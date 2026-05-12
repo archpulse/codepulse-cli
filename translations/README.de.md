@@ -44,9 +44,17 @@ codepulse watch .
 
 ---
 
-## 🏆 Wettbewerbsvorteil
+## 🏆 Wettbewerbsvorteil (Forschungsbericht von Mythos)
 
-CodePulse ist das einzige Tool, das **AST-statische Analyse**, **Git-basierte Churn- & Kopplungs-Analyse**, eine **Time Machine zur Verfolgung architektonischer Verschlechterung**, **Runtime-Profiler-Korrelation** und eine **native MCP-Integration für KI-Agenten-Workflows** nahtlos vereint. Während Tools wie SonarQube, CodeClimate oder ESLint Standard-Linting bieten, liefert CodePulse das "fehlende Glied": eine ganzheitliche Sicht darauf, **wie der Code war, wie er ist und wie man ihn jetzt sofort mit KI-Unterstützung repariert.** Wir melden nicht nur technische Schulden – wir identifizieren proaktiv die wirkungsvollsten Refactoring-Pfade, um Ihre Architektur gesund zu halten.
+CodePulse ist nicht nur ein weiterer Linter; es ist die branchenweit erste **Engine für Architektur-Intelligenz**. Während konventionelle Tools (ESLint, SonarQube, CodeClimate) sich auf symptomatische, isolierte Prüfungen auf Dateiebene konzentrieren, liefert CodePulse eine ganzheitliche architektonische Sicht durch die Zusammenführung von fünf kritischen Datenbereichen:
+
+*   **Strukturelle AST-Analyse:** Tiefgehendes semantisches Verständnis von Codemodulen.
+*   **Git-temporale Analytik:** Verfolgt "versteckte" Kopplungen über die Änderungshistorie (Churn & Co-Change-Raten).
+*   **Historische Time Machine:** Visualisiert architektonische Verschlechterung über die Commit-Historie hinweg.
+*   **Runtime-Korrelation:** Mappt Engpässe in der Performance auf statische Codestrukturen.
+*   **Native MCP-Intelligenz:** Liefert LLMs den strukturellen Kontext, der für präzises, agentengesteuertes Refactoring erforderlich ist.
+
+**Das "fehlende Glied":** Im Zeitalter der KI-nativen Entwicklung ist die Qualität des Outputs einer KI durch den Kontext begrenzt, den sie erhält. CodePulse fungiert als primärer **Anbieter für architektonischen Kontext**. Wir gehen über die bloße Meldung technischer Schulden hinaus, indem wir proaktiv die wirkungsvollsten Refactoring-Pfade identifizieren und die präzise strukturelle Karte bereitstellen, die LLMs benötigen, um Architekturprobleme mit chirurgischer Genauigkeit zu beheben.
 
 ## 🎯 Hauptfunktionen
 

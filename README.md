@@ -44,11 +44,17 @@ codepulse watch .
 
 ---
 
-## 🏆 Competitive Advantage
+## 🏆 Competitive Advantage (Research Report by Mythos)
 
-CodePulse stands alone as the only tool that seamlessly unifies **AST static analysis**, **Git-based churn & coupling analytics**, **Time Machine for historical architectural tracking**, **Runtime Profiler correlation**, and **native MCP integration for AI-agent workflows**. 
+CodePulse is not another linter; it is the industry’s first **architectural intelligence engine**. While conventional tools (ESLint, SonarQube, CodeClimate) focus on symptomatic, isolated file-level checks, CodePulse delivers a holistic architectural view by unifying five critical data dimensions:
 
-While tools like SonarQube, CodeClimate, or ESLint provide standard linting, CodePulse delivers the "missing link": a holistic view of **how the code was, how it is now, and exactly how to fix it right now with AI assistance.** We don't just report technical debt—we proactively identify the most impactful refactoring paths to keep your architecture healthy.
+*   **Structural AST Analysis:** Deep semantic understanding of code modules.
+*   **Git-Temporal Analytics:** Tracks "hidden" coupling via change-history (churn & co-change rates).
+*   **Historical Time Machine:** Visualizes architectural drift across commit history.
+*   **Runtime Correlation:** Maps production performance bottlenecks onto static code structures.
+*   **Native MCP Intelligence:** Provides LLMs with the structural context required for surgical, agent-driven refactoring.
+
+**The "Missing Link":** In the era of AI-native engineering, the quality of an AI’s output is limited by the context it receives. CodePulse serves as the primary **Architectural Context Provider**. It moves beyond reporting technical debt by identifying the most impactful refactoring paths, providing the exact structural map LLMs need to fix architectural issues with precision.
 
 | Feature | Description |
 |---------|-------------|
