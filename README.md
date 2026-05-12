@@ -50,6 +50,7 @@ codepulse watch .
 |---------|-------------|
 | **🏗️ Architectural Radar** | Define layers and catch boundary violations automatically |
 | **🧠 Semantic Duplication** | AST-based structural hashing finds identical logic, not just identical lines |
+| **🔄 Circular Dependency Breaker** | Automatically detect and break circular imports (A→B→A) |
 | **⚡ Real-time Watch Mode** | Interactive TUI dashboard that updates as you code |
 | **🎨 Beautiful CLI** | Enhanced with rich colors, ASCII art banners, and clear visualizations |
 | **🌐 7-Language Support** | Use `--lang` to switch between languages on the fly |

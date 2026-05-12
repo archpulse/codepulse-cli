@@ -43,6 +43,33 @@ export class ArchitectureRule implements Rule {
 
 const WARN_THRESHOLD = 10;
 
+export class CircularDependencyRule implements Rule {
+	name = "circular-dependency";
+
+	run(context: AnalysisContext): Issue[] {
+		const issues: Issue[] = [];
+		const { edges } = context;
+
+		// Re-run cycle detection on the current context edges
+		const { findCycles } = require("../analyzer/graph");
+		const cycles = findCycles(edges);
+
+		for (const cycle of cycles) {
+			const relCycle = cycle.map((p: string) => path.basename(p));
+			issues.push({
+				type: "circular-dependency",
+				severity: "error",
+				file: cycle[0], // Report on the first file in the cycle
+				message: `Circular dependency detected: ${relCycle.join(" → ")}`,
+				suggestion:
+					"Break the cycle by extracting shared logic to a new module or using dependency injection.",
+			});
+		}
+
+		return issues;
+	}
+}
+
 export class ComplexityRule implements Rule {
 	name = "high-complexity";
 
@@ -290,6 +317,7 @@ export function runRules(
 ): Issue[] {
 	const rules: Rule[] = [
 		new ArchitectureRule(),
+		new CircularDependencyRule(),
 		new ComplexityRule(opts.strict ? 15 : 20),
 		new CriticalNodeRule(),
 		new DeadExportRule(),

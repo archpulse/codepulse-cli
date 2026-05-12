@@ -209,6 +209,7 @@ async function generateScanOutputs(result: any, absDir: string, opts: any) {
 		deadExports: result.deadExports.length,
 		godFiles: result.godFiles.length,
 		criticalFiles: result.criticalFiles.length,
+		circularDependencies: result.circularDependencies.length,
 		hotspots: result.hotspots,
 		avgComplexity: result.avgComplexity,
 	};

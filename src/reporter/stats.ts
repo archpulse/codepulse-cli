@@ -73,10 +73,12 @@ export function calculateHealthScore(
 		(i) => i.type === "duplication",
 	).length;
 	const linterIssues = result.issues.filter((i) => i.type === "linter").length;
+	const circularCount = result.circularDependencies?.length || 0;
 
 	// Severe issues
 	score -= Math.min(40, stats.vulnerabilities * 15);
 	score -= Math.min(30, scaIssues * 15);
+	score -= Math.min(40, circularCount * 10);
 
 	// Design/Quality issues
 	score -= Math.min(25, duplicationIssues * 4);

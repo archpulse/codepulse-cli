@@ -8,6 +8,7 @@ export type IssueType =
 	| "dependency-vulnerability"
 	| "linter"
 	| "architecture-violation"
+	| "circular-dependency"
 	| "custom";
 
 export type IssueSeverity = "info" | "warning" | "error";
@@ -93,6 +94,7 @@ export interface AnalysisResult {
 	deadExports: DeadExport[];
 	godFiles: FileNode[];
 	criticalFiles: GraphNode[];
+	circularDependencies: string[][];
 	hotspots: Hotspot[];
 	temporalCouplings?: TemporalCoupling[];
 	totalFiles: number;

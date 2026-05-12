@@ -20,6 +20,7 @@ export const TOOL_HANDLERS: Record<
 			criticalFiles: result.criticalFiles.length,
 			hotspots: result.hotspots,
 			avgComplexity: result.avgComplexity,
+			circularDependencies: result.circularDependencies.length,
 		};
 		const healthScore = calculateHealthScore(healthStats, result);
 
@@ -39,6 +40,17 @@ export const TOOL_HANDLERS: Record<
 		sections.push(`| Avg Complexity | ${result.avgComplexity.toFixed(1)} |`);
 		sections.push(`| Errors | ${errors.length} |`);
 		sections.push(`| Warnings | ${warnings.length} |`);
+
+		if (result.circularDependencies.length > 0) {
+			sections.push("");
+			sections.push(
+				`## 🔄 Circular Dependencies (${result.circularDependencies.length}) — FIX URGENTLY`,
+			);
+			for (const cycle of result.circularDependencies.slice(0, 5)) {
+				const relCycle = cycle.map((p) => path.basename(p));
+				sections.push(`- ${relCycle.join(" → ")}`);
+			}
+		}
 
 		if (result.godFiles.length > 0) {
 			sections.push("");

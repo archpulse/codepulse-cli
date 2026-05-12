@@ -176,38 +176,41 @@ function renderDashboard(
 		deadExports: deadExports.length,
 		godFiles: result.godFiles.length,
 		criticalFiles: criticalFiles.length,
+		circularDependencies: result.circularDependencies.length,
 		hotspots: hotspots,
 		avgComplexity: avgComplexity,
-	};
+		};
 
-	const score = calculateHealthScore(healthStats, result);
-	const errors = issues.filter((i) => i.severity === "error").length;
-	const warnings = issues.filter((i) => i.severity === "warning").length;
-	const linterCount = issues.filter((i) => i.type === "linter").length;
+		const score = calculateHealthScore(healthStats, result);
+		const errors = issues.filter((i) => i.severity === "error").length;
+		const warnings = issues.filter((i) => i.severity === "warning").length;
+		const linterCount = issues.filter((i) => i.type === "linter").length;
 
-	const scoreColor =
+		const scoreColor =
 		score > 90 ? chalk.green : score > 70 ? chalk.yellow : chalk.red;
 
-	const statusLine = analyzing
+		const statusLine = analyzing
 		? chalk.yellow("  🔄 Analyzing changes...")
 		: chalk.green("  ✨ System Idle");
 
-	const issuesList = renderIssuesList(issues, showFullIssues);
+		const issuesList = renderIssuesList(issues, showFullIssues);
 
-	const dashboard = `
-  ${chalk.bold.white("📊 Code Health Dashboard")}   [${scoreColor(`${score}/100`)}]
-  ${chalk.gray("─".repeat(50))}
+		const dashboard = `
+		${chalk.bold.white("📊 Code Health Dashboard")}   [${scoreColor(`${score}/100`)}]
+		${chalk.gray("─".repeat(50))}
 
-  ${chalk.white("Files:")} ${chalk.cyan(totalFiles)} | ${chalk.white("Lines:")} ${chalk.cyan(totalLines)} | ${chalk.white("Avg Complexity:")} ${chalk.yellow(avgComplexity.toFixed(2))}
-  ${chalk.white("Issues:")} ${chalk.red(`${errors} errors`)} | ${chalk.yellow(`${warnings} warnings`)} | ${chalk.blue(`${linterCount} lint`)}
+		${chalk.white("Files:")} ${chalk.cyan(totalFiles)} | ${chalk.white("Lines:")} ${chalk.cyan(totalLines)} | ${chalk.white("Avg Complexity:")} ${chalk.yellow(avgComplexity.toFixed(2))}
+		${chalk.white("Issues:")} ${chalk.red(`${errors} errors`)} | ${chalk.yellow(`${warnings} warnings`)} | ${chalk.blue(`${linterCount} lint`)}
 
-  ${chalk.bold.magenta("🏗️  Structural Risks")}
-  ${chalk.gray("─".repeat(20))}
-  Critical Nodes: ${criticalFiles.length > 0 ? chalk.red(criticalFiles.length) : chalk.green("0")}
-  God Files:      ${result.godFiles.length > 0 ? chalk.yellow(result.godFiles.length) : chalk.green("0")}
-  Dead Exports:   ${deadExports.length > 0 ? chalk.yellow(deadExports.length) : chalk.green("0")}
+		${chalk.bold.magenta("🏗️  Structural Risks")}
+		${chalk.gray("─".repeat(20))}
+		Critical Nodes: ${criticalFiles.length > 0 ? chalk.red(criticalFiles.length) : chalk.green("0")}
+		God Files:      ${result.godFiles.length > 0 ? chalk.yellow(result.godFiles.length) : chalk.green("0")}
+		Dead Exports:   ${deadExports.length > 0 ? chalk.yellow(deadExports.length) : chalk.green("0")}
+		Cycles:         ${result.circularDependencies.length > 0 ? chalk.red(result.circularDependencies.length) : chalk.green("0")}
 
-  ${chalk.bold.hex("#FFA500")("🔥 Complexity Hotspots")}
+		${chalk.bold.hex("#FFA500")("🔥 Complexity Hotspots")}
+
   ${chalk.gray("─".repeat(20))}
   ${hotspots
 		.slice(0, 5)

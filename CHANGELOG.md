@@ -3,6 +3,11 @@
 ## 🚀 The Big Leap
 Version 4.0 transforms CodePulse from a passive code scanner into an active architectural co-pilot. We have introduced predictive risk analytics and a proactive discovery system for AI agents.
 
+### 🧩 New Feature: Circular Dependency Breaker
+*   **Cycle Detection:** Integrated Tarjan's algorithm to detect circular dependencies (A→B→C→A) directly in the dependency graph.
+*   **Active Reporting:** New `circular-dependency` issue type. Circular loops are now automatically factored into the Health Score (up to -40 pts).
+*   **AI-Guided Refactoring:** MCP tool `codepulse_identity` now explicitly flags dependency cycles, enabling AI agents to propose immediate refactoring strategies (e.g., dependency injection).
+
 ### 🧠 Intelligent Analytics
 *   **Temporal Coupling Detector:** A new Git-history analysis engine. It identifies "invisible" dependencies between files that frequently change together (80%+ co-change rate), even if they have no direct imports.
 *   **PR Risk Scorer:** Introduced the `pr-risk` command. It evaluates the danger of Pull Request changes on a 100-point scale by analyzing architectural centrality, complexity, and historical churn.

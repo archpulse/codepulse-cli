@@ -167,7 +167,7 @@ export async function analyze(
 
 	const files = processFiles(filePaths, dir, churnMap, config, silent, cache);
 
-	const { edges, graph } = buildGraph(files, dir);
+	const { edges, graph, circularDependencies } = buildGraph(files, dir);
 	const deadExports = detectDeadExports(files, edges);
 	const godFiles = files.filter((f) => f.isGodFile);
 	const hotspots = calculateHotspots(files);
@@ -201,6 +201,7 @@ export async function analyze(
 		deadExports,
 		godFiles,
 		criticalFiles,
+		circularDependencies,
 		hotspots,
 		temporalCouplings,
 		totalFiles: files.length,

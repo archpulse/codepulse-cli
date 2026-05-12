@@ -61,10 +61,58 @@ function calculateCentrality(graph: Map<string, GraphNode>) {
 	}
 }
 
+export function findCycles(edges: DependencyEdge[]): string[][] {
+	const adj = new Map<string, string[]>();
+	for (const edge of edges) {
+		const list = adj.get(edge.from) || [];
+		list.push(edge.to);
+		adj.set(edge.from, list);
+	}
+
+	const cycles: string[][] = [];
+	const visited = new Set<string>();
+	const recStack = new Set<string>();
+	const path: string[] = [];
+
+	function dfs(v: string) {
+		visited.add(v);
+		recStack.add(v);
+		path.push(v);
+
+		const neighbors = adj.get(v) || [];
+		for (const neighbor of neighbors) {
+			if (!visited.has(neighbor)) {
+				dfs(neighbor);
+			} else if (recStack.has(neighbor)) {
+				// Cycle detected
+				const cycleStartIdx = path.indexOf(neighbor);
+				if (cycleStartIdx !== -1) {
+					cycles.push([...path.slice(cycleStartIdx), neighbor]);
+				}
+			}
+		}
+
+		recStack.delete(v);
+		path.pop();
+	}
+
+	for (const node of adj.keys()) {
+		if (!visited.has(node)) {
+			dfs(node);
+		}
+	}
+
+	return cycles;
+}
+
 export function buildGraph(
 	files: FileNode[],
 	baseDir: string,
-): { edges: DependencyEdge[]; graph: Map<string, GraphNode> } {
+): {
+	edges: DependencyEdge[];
+	graph: Map<string, GraphNode>;
+	circularDependencies: string[][];
+} {
 	const filePathSet = new Set(files.map((f) => f.path));
 	const moduleNameMap = createModuleMap(files);
 
@@ -105,7 +153,9 @@ export function buildGraph(
 
 	calculateCentrality(graph);
 
-	return { edges, graph };
+	const circularDependencies = findCycles(edges);
+
+	return { edges, graph, circularDependencies };
 }
 
 function resolveRelative(
