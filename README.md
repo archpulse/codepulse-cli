@@ -44,7 +44,11 @@ codepulse watch .
 
 ---
 
-## 🎯 Core Features
+## 🏆 Competitive Advantage
+
+CodePulse stands alone as the only tool that seamlessly unifies **AST static analysis**, **Git-based churn & coupling analytics**, **Time Machine for historical architectural tracking**, **Runtime Profiler correlation**, and **native MCP integration for AI-agent workflows**. 
+
+While tools like SonarQube, CodeClimate, or ESLint provide standard linting, CodePulse delivers the "missing link": a holistic view of **how the code was, how it is now, and exactly how to fix it right now with AI assistance.** We don't just report technical debt—we proactively identify the most impactful refactoring paths to keep your architecture healthy.
 
 | Feature | Description |
 |---------|-------------|
