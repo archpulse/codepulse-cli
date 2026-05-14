@@ -73,7 +73,7 @@ export async function runSecurityChecks(
 		runVulnerabilityChecks(context),
 	]);
 
-	return [...scaIssues, ...vulnerabilityIssues];
+	return [...scaIssues, ...vulnerabilityIssues].sort(compareIssues);
 }
 
 async function runSCAChecks(rootDir: string): Promise<Issue[]> {
@@ -155,6 +155,19 @@ function shouldSkipFile(relativePath: string): boolean {
 		relativePath.includes("explain.ts") ||
 		relativePath.includes("reporter/")
 	);
+}
+
+function compareIssues(a: Issue, b: Issue): number {
+	const fileCompare = a.file.localeCompare(b.file);
+	if (fileCompare !== 0) return fileCompare;
+
+	const lineCompare = (a.line ?? 0) - (b.line ?? 0);
+	if (lineCompare !== 0) return lineCompare;
+
+	const typeCompare = a.type.localeCompare(b.type);
+	if (typeCompare !== 0) return typeCompare;
+
+	return a.message.localeCompare(b.message);
 }
 
 async function runConcurrent<T>(

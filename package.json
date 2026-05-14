@@ -22,7 +22,7 @@
 		"extensions/*"
 	],
 	"dependencies": {
-		"@archpulse/codepulse": "^4.0.0",
+		"@archpulse/codepulse": "^4.2.0",
 		"@babel/parser": "^7.23.0",
 		"@babel/traverse": "^7.23.0",
 		"@babel/types": "^7.23.0",
