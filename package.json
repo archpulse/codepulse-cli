@@ -1,6 +1,6 @@
 {
 	"name": "@archpulse/codepulse",
-	"version": "4.1.5",
+	"version": "4.2.0",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/archpulse/codepulse-cli.git"
