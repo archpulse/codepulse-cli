@@ -22,6 +22,7 @@ import {
 	runWatch,
 	saveBadge,
 } from "./commands";
+import { normalizeScanArgs } from "./commands/scan";
 import {
 	markDepsAsInstalled,
 	setupMcpConfigs,
@@ -58,16 +59,28 @@ program.option(
 // Check for updates
 const notifier = updateNotifier({
 	pkg,
-	updateCheckInterval: 0, // Check every time for debugging
 	distTag: "latest",
+	shouldNotifyInNpmScript: true,
 });
 
-if (notifier.update && notifier.update.latest !== pkg.version) {
-	notifier.notify({ isGlobal: true, defer: false });
+async function notifyAboutUpdates(): Promise<void> {
+	try {
+		const update = await notifier.fetchInfo();
+		const mutableNotifier = notifier as typeof notifier & {
+			update: Awaited<ReturnType<typeof notifier.fetchInfo>>;
+		};
+		mutableNotifier.update = update;
+		if (update.latest !== update.current) {
+			mutableNotifier.notify({ isGlobal: true, defer: false });
+		}
+	} catch (_err) {
+		// Ignore registry/network errors so startup remains usable offline.
+	}
 }
 
-// Auto-configure on first run
-(async () => {
+async function bootstrap() {
+	await notifyAboutUpdates();
+
 	// 1. Dependency Setup (Independently of MCP)
 	if (shouldRunDepsSetup()) {
 		await runInstallDeps(true);
@@ -86,7 +99,10 @@ if (notifier.update && notifier.update.latest !== pkg.version) {
 			);
 		}
 	}
-})();
+
+	process.argv = normalizeScanArgs(process.argv);
+	program.parse(process.argv);
+}
 
 program
 	.name("codepulse")
@@ -133,7 +149,7 @@ program
 program
 	.command("install-deps")
 	.description(
-		"Automatically install all required external linters (Biome, Ruff, Cppcheck, ShellCheck, GolangCI)",
+		"Automatically install all required external linters (Oxlint, Ruff, Cppcheck, ShellCheck, GolangCI)",
 	)
 	.action(runInstallDeps);
 
@@ -207,7 +223,7 @@ program
 		if (total > 0) {
 			console.log(
 				chalk.cyan(
-					`\n  AI agents (${allRules.length} supported) will now proactively use CodePulse tools for code analysis.\n`,
+					`\n  AI agents (${allRules.length} supported) can now use CodePulse tools for code analysis when it helps.\n`,
 				),
 			);
 		}
@@ -219,7 +235,12 @@ program
 	.description("Analyze project and generate full HTML report")
 	.option("--open", "Open report in browser after generation")
 	.option("--sarif", "Generate SARIF report for CI/CD")
-	.option("-d, --debug", "Show detailed issues list")
+	.option("-d, --debug", "Show program issues only")
+	.option("--ld", "Show linter debug details (-ld)")
+	.option(
+		"--ignore-warnings",
+		"Hide warning-level issues in detailed output (-diw / -ldiw)",
+	)
 	.option("--json", "Output issues as JSON (CI-friendly)")
 	.option(
 		"--focus <type>",
@@ -405,7 +426,7 @@ program
 	)
 	.option("--top <number>", "Number of top hotspots to show (default: 20)")
 	.option("--json", "Output as JSON")
-	.action(runProfileCommand);
+		.action(runProfileCommand);
 
 const plugins = program
 	.command("plugins")
@@ -447,6 +468,9 @@ plugins
 			console.error(chalk.red("Failed to list plugins:"), err);
 			process.exit(1);
 		}
-	});
+});
 
-program.parse(process.argv);
+bootstrap().catch((err) => {
+	console.error(chalk.red("Failed to start CodePulse:"), err);
+	process.exit(1);
+});

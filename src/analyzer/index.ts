@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
+import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import { runRules } from "../rules";
 import type {
 	AnalysisCache,
@@ -17,8 +19,48 @@ import {
 	getTemporalCoupling,
 	type TemporalCoupling,
 } from "./git";
+import {
+	loadAnalysisCache,
+	pruneAnalysisCache,
+	saveAnalysisCache,
+} from "./cache";
 import { buildGraph, detectDeadExports } from "./graph";
-import { scanFiles } from "./scanner";
+import { readFileForAnalysis, scanFiles } from "./scanner";
+import { runFastLinterChecks } from "../rules/fastLinter";
+import { runSecurityChecks } from "../rules/security";
+
+interface FileAnalysisJob {
+	index: number;
+	filePath: string;
+}
+
+interface FileAnalysisWorkerResult {
+	index: number;
+	file: FileNode | null;
+}
+
+const FILE_ANALYSIS_WORKER_ROLE = "file-analysis-worker";
+
+if (
+	!isMainThread &&
+	parentPort &&
+	workerData?.role === FILE_ANALYSIS_WORKER_ROLE
+) {
+	parentPort.on("message", async (job: FileAnalysisJob) => {
+		try {
+			const file = await analyzeFileEntry(job.filePath, workerData.dir);
+			parentPort?.postMessage({ index: job.index, file });
+		} catch {
+			parentPort?.postMessage({ index: job.index, file: null });
+		}
+	});
+}
+
+function createEmptyCache(): AnalysisCache {
+	return {
+		fileNodes: new Map<string, FileNode>(),
+	};
+}
 
 function loadConfig(dir: string, options: { strict?: boolean }): ProjectConfig {
 	let config: ProjectConfig = {
@@ -42,59 +84,109 @@ function loadConfig(dir: string, options: { strict?: boolean }): ProjectConfig {
 	return config;
 }
 
-function processSingleFile(
-	filePath: string,
+function createFastLinterContext(
+	filePaths: string[],
 	dir: string,
+	config: ProjectConfig,
+): AnalysisContext {
+	return {
+		files: filePaths.map((filePath) => ({
+			path: filePath,
+			relativePath: path.relative(dir, filePath),
+			content: "",
+			imports: [],
+			exports: [],
+			functions: [],
+			lines: 0,
+			complexity: 0,
+			isGodFile: false,
+		})),
+		graph: new Map(),
+		edges: [],
+		config,
+	};
+}
+
+function createSecurityContext(
+	filePaths: string[],
+	dir: string,
+	config: ProjectConfig,
+): AnalysisContext {
+	return {
+		files: filePaths.map((filePath) => ({
+			path: filePath,
+			relativePath: path.relative(dir, filePath),
+			content: "",
+			imports: [],
+			exports: [],
+			functions: [],
+			lines: 0,
+			complexity: 0,
+			isGodFile: false,
+		})),
+		graph: new Map(),
+		edges: [],
+		config,
+	};
+}
+
+function finalizeFileNode(
+	result: FileNode,
 	churnMap: Map<string, number>,
 	config: ProjectConfig,
+	mtime?: number,
+	size?: number,
 	cache?: AnalysisCache,
-): FileNode | null {
+	filePath?: string,
+): FileNode {
+	if (mtime !== undefined) result.mtime = mtime;
+	if (size !== undefined) result.size = size;
+	result.churn = churnMap.get(result.relativePath) || 0;
+	result.isGodFile =
+		result.lines > (config.godFileLines || 500) ||
+		result.imports.length > (config.godFileImports || 15);
+	if (cache && filePath) cache.fileNodes.set(filePath, result);
+	return result;
+}
+
+async function analyzeFileEntry(
+	filePath: string,
+	dir: string,
+): Promise<FileNode | null> {
 	try {
-		const mtime = fs.statSync(filePath).mtimeMs;
-		let result: FileNode | null = null;
-
-		if (cache?.fileNodes.has(filePath)) {
-			const cached = cache.fileNodes.get(filePath)!;
-			if (cached.mtime === mtime) {
-				result = cached;
-			}
-		}
-
-		if (!result) {
-			result = analyzeFile(filePath, dir);
-			if (result) {
-				result.mtime = mtime;
-				if (cache) cache.fileNodes.set(filePath, result);
-			}
-		}
-
-		if (result) {
-			const rel = result.relativePath;
-			result.churn = churnMap.get(rel) || 0;
-			result.isGodFile =
-				result.lines > (config.godFileLines || 500) ||
-				result.imports.length > (config.godFileImports || 15);
-		}
+		const stats = await fs.promises.stat(filePath);
+		const fileData = await readFileForAnalysis(filePath);
+		if (!fileData.content) return null;
+		const result = analyzeFile(filePath, dir, fileData.content);
+		if (!result) return null;
+		result.mtime = stats.mtimeMs;
+		result.size = stats.size;
 		return result;
 	} catch (_err) {
 		return null;
 	}
 }
 
-function processFiles(
+async function processFilesSequentially(
 	filePaths: string[],
 	dir: string,
 	churnMap: Map<string, number>,
 	config: ProjectConfig,
 	silent = false,
 	cache?: AnalysisCache,
-): FileNode[] {
+): Promise<FileNode[]> {
 	const files: FileNode[] = [];
 	let processed = 0;
 	const total = filePaths.length;
 
 	for (const filePath of filePaths) {
-		const result = processSingleFile(filePath, dir, churnMap, config, cache);
+		const result = await analyzeAndFinalizeFile(
+			filePath,
+			dir,
+			churnMap,
+			config,
+			cache,
+		);
 		if (result) {
 			files.push(result);
 		}
@@ -105,6 +197,202 @@ function processFiles(
 	}
 	if (!silent) process.stdout.write("\n");
 	return files;
+}
+
+	async function analyzeAndFinalizeFile(
+		filePath: string,
+		dir: string,
+		churnMap: Map<string, number>,
+		config: ProjectConfig,
+	cache?: AnalysisCache,
+): Promise<FileNode | null> {
+		try {
+			const stats = await fs.promises.stat(filePath);
+			if (cache?.fileNodes.has(filePath)) {
+				const cached = cache.fileNodes.get(filePath)!;
+				if (
+					cached.mtime === stats.mtimeMs &&
+					(cached.size === undefined || cached.size === stats.size)
+				) {
+					return finalizeFileNode(
+						cached,
+						churnMap,
+						config,
+						stats.mtimeMs,
+						stats.size,
+						cache,
+						filePath,
+					);
+				}
+			}
+
+			const fileData = await readFileForAnalysis(filePath);
+			if (!fileData.content) return null;
+
+		const result = analyzeFile(filePath, dir, fileData.content);
+		if (!result) return null;
+
+		return finalizeFileNode(
+			result,
+			churnMap,
+			config,
+			stats.mtimeMs,
+			stats.size,
+			cache,
+			filePath,
+		);
+	} catch {
+		return null;
+	}
+}
+
+function getWorkerCount(fileCount: number): number {
+	if (fileCount <= 1) return 1;
+	const available = os.availableParallelism?.() ?? os.cpus().length ?? 2;
+	const clamped = Math.max(2, Math.min(24, available));
+	return Math.min(clamped, fileCount);
+}
+
+async function processFilesWithWorkers(
+	filePaths: string[],
+	dir: string,
+	churnMap: Map<string, number>,
+	config: ProjectConfig,
+	silent = false,
+	cache?: AnalysisCache,
+): Promise<FileNode[]> {
+	const results: (FileNode | null)[] = new Array(filePaths.length).fill(null);
+	const pendingJobs: FileAnalysisJob[] = [];
+	let processed = 0;
+	const total = filePaths.length;
+
+	for (let index = 0; index < filePaths.length; index++) {
+		const filePath = filePaths[index];
+		try {
+			const stats = await fs.promises.stat(filePath);
+			if (cache?.fileNodes.has(filePath)) {
+				const cached = cache.fileNodes.get(filePath)!;
+				if (
+					cached.mtime === stats.mtimeMs &&
+					(cached.size === undefined || cached.size === stats.size)
+				) {
+					results[index] = finalizeFileNode(
+						cached,
+						churnMap,
+						config,
+						stats.mtimeMs,
+						stats.size,
+						cache,
+						filePath,
+					);
+					processed++;
+					if (!silent && (processed % 10 === 0 || processed === total)) {
+						process.stdout.write(
+							`\r  Analyzing files: ${processed}/${total}...`,
+						);
+					}
+					continue;
+				}
+			}
+			pendingJobs.push({ index, filePath });
+		} catch {
+			processed++;
+			if (!silent && (processed % 10 === 0 || processed === total)) {
+				process.stdout.write(`\r  Analyzing files: ${processed}/${total}...`);
+			}
+		}
+	}
+
+	const workerCount = getWorkerCount(pendingJobs.length);
+	if (workerCount === 1) {
+		for (const job of pendingJobs) {
+			results[job.index] = await analyzeAndFinalizeFile(
+				job.filePath,
+				dir,
+				churnMap,
+				config,
+				cache,
+			);
+			processed++;
+			if (!silent && (processed % 10 === 0 || processed === total)) {
+				process.stdout.write(`\r  Analyzing files: ${processed}/${total}...`);
+			}
+		}
+		if (!silent) process.stdout.write("\n");
+		return results.filter((file): file is FileNode => file !== null);
+	}
+
+	const workerPath = __filename;
+	const workers: Worker[] = [];
+	let nextJobIndex = 0;
+
+	await new Promise<void>((resolve, reject) => {
+		let settled = false;
+		const finish = () => {
+			if (settled) return;
+			settled = true;
+			Promise.allSettled(workers.map((worker) => worker.terminate()))
+				.then(() => resolve())
+				.catch(() => resolve());
+		};
+		const fail = (error: unknown) => {
+			if (settled) return;
+			settled = true;
+			Promise.allSettled(workers.map((worker) => worker.terminate()))
+				.then(() => reject(error))
+				.catch(() => reject(error));
+		};
+		const scheduleNext = (worker: Worker) => {
+			if (settled) return;
+			const job = pendingJobs[nextJobIndex++];
+			if (job) {
+				worker.postMessage({ ...job, dir });
+			}
+		};
+
+		try {
+			for (let i = 0; i < workerCount; i++) {
+				const worker = new Worker(workerPath, {
+					workerData: { role: FILE_ANALYSIS_WORKER_ROLE, dir },
+				});
+				workers.push(worker);
+				worker.on("message", (message: FileAnalysisWorkerResult) => {
+					if (settled) return;
+					if (message.file) {
+						results[message.index] = finalizeFileNode(
+							message.file,
+							churnMap,
+							config,
+							message.file.mtime,
+							message.file.size,
+							cache,
+							filePaths[message.index],
+						);
+					}
+					processed++;
+					if (!silent && (processed % 10 === 0 || processed === total)) {
+						process.stdout.write(
+							`\r  Analyzing files: ${processed}/${total}...`,
+						);
+					}
+					if (processed >= total) {
+						finish();
+						return;
+					}
+					if (nextJobIndex < pendingJobs.length) {
+						scheduleNext(worker);
+					}
+				});
+				worker.on("error", fail);
+				scheduleNext(worker);
+			}
+		} catch (error) {
+			fail(error);
+		}
+	});
+
+	if (!silent) process.stdout.write("\n");
+	return results.filter((file): file is FileNode => file !== null);
 }
 
 export async function analyze(
@@ -118,7 +406,17 @@ export async function analyze(
 ): Promise<AnalysisResult> {
 	const config = loadConfig(dir, options);
 	const silent = options.silent || false;
-	const cache = options.cache;
+	let cache = options.cache;
+	if (!cache) {
+		cache = await loadAnalysisCache(dir).catch(() => createEmptyCache());
+	} else if (cache.fileNodes.size === 0) {
+		const loaded = await loadAnalysisCache(dir).catch(() => createEmptyCache());
+		for (const [filePath, node] of loaded.fileNodes) {
+			cache.fileNodes.set(filePath, node);
+		}
+		if (loaded.gitChurn) cache.gitChurn = loaded.gitChurn;
+		if (loaded.lastScanTime) cache.lastScanTime = loaded.lastScanTime;
+	}
 
 	const scanOptions: ScanOptions = {
 		dir,
@@ -153,6 +451,13 @@ export async function analyze(
 	};
 
 	const filePaths = scanFiles(scanOptions);
+	pruneAnalysisCache(cache, filePaths);
+	const fastLinterPromise = runFastLinterChecks(
+		createFastLinterContext(filePaths, dir, config),
+	);
+	const securityPromise = runSecurityChecks(
+		createSecurityContext(filePaths, dir, config),
+	);
 
 	let churnMap: Map<string, number>;
 	if (cache?.gitChurn && Date.now() - (cache.lastScanTime || 0) < 60000) {
@@ -165,7 +470,29 @@ export async function analyze(
 		}
 	}
 
-	const files = processFiles(filePaths, dir, churnMap, config, silent, cache);
+	let files: FileNode[];
+	try {
+		files =
+			filePaths.length > 0
+				? await processFilesWithWorkers(
+						filePaths,
+						dir,
+						churnMap,
+						config,
+						silent,
+						cache,
+					)
+				: [];
+	} catch {
+		files = await processFilesSequentially(
+			filePaths,
+			dir,
+			churnMap,
+			config,
+			silent,
+			cache,
+		);
+	}
 
 	const { edges, graph, circularDependencies } = buildGraph(files, dir);
 	const deadExports = detectDeadExports(files, edges);
@@ -193,6 +520,12 @@ export async function analyze(
 	const context: AnalysisContext = { files, graph, edges, config };
 	const externalRules = await loadPlugins();
 	const issues = runRules(context, { strict: options.strict }, externalRules);
+	const linterIssues = await fastLinterPromise.catch(() => []);
+	const securityIssues = await securityPromise.catch(() => []);
+	issues.push(...linterIssues);
+	issues.push(...securityIssues);
+
+	await saveAnalysisCache(dir, cache).catch(() => {});
 
 	return {
 		files,

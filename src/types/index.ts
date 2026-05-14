@@ -66,6 +66,7 @@ export interface FileNode {
 	isGodFile: boolean;
 	churn?: number;
 	mtime?: number;
+	size?: number;
 }
 
 export interface DependencyEdge {

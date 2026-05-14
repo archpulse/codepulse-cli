@@ -4,41 +4,32 @@ import * as path from "node:path";
 
 // ─── The Master Rule Set ─────────────────────────────────────────────
 
-export const CODEPULSE_AGENT_RULES = `# CodePulse — Architectural Intelligence (MCP)
+export const CODEPULSE_AGENT_RULES = `# CodePulse - Architectural Support (MCP)
 
-You have a professional code architecture analyzer installed as an MCP tool called **CodePulse**. 
-It performs deep AST-based static analysis, builds dependency graphs, and computes cyclomatic complexity.
+CodePulse is available through MCP as a secondary source of architectural evidence.
 
-## MANDATORY WORKFLOW
+## Default Workflow
 
-### 1. Context Acquisition (On Session Start)
-- **ALWAYS** call \`codepulse_identity\` first. It returns a 0-100 Health Score and identifies:
-  - **God Files**: Modules that are too large and MUST be split.
-  - **Critical Nodes**: High-dependency files (highest risk for changes).
-  - **Hotspots**: Complex files with high churn (priority for refactoring).
-
-### 2. Risk Assessment (Before Editing)
-- **ALWAYS** call \`get_file_context(file: "...path...")\` before modifying any file.
-- It reveals **Temporal Coupling** (hidden dependencies from git history) and structural risks.
-
-### 3. Quality Assurance (Before Refactoring)
-- Call \`analyze_project\` with \`focus\` filters to identify specific technical debt.
-- Call \`find_dead_code\` to clean up unused exports.
+1. Read the relevant files and trace the code manually first.
+2. If the answer is still unclear, use \`codepulse_identity\` for a project-wide map.
+3. Before editing a risky file, use \`get_file_context\` when the file looks central or historically volatile.
+4. For broader refactors or cleanup, use \`analyze_project\`, \`get_hotspots\`, and \`find_dead_code\` to confirm what manual inspection suggests.
 
 ## Core Tools Registry
 
-| Tool | Primary Use Case |
-|------|------------------|
-| \`codepulse_identity\` | Project health overview & refactoring targets |
-| \`get_file_context\` | Pre-edit risk check (reveals hidden couplings) |
-| \`analyze_project\` | Detailed debt analysis (complexity, god files, etc.) |
-| \`get_hotspots\` | Prioritizing where to fix bugs/refactor first |
-| \`find_dead_code\` | Removing unused code safely |
+| Tool | When to use |
+|------|-------------|
+| \`codepulse_identity\` | When you need a quick architectural map or a first-pass health check |
+| \`get_file_context\` | Before editing a file that may have hidden dependencies or high impact |
+| \`analyze_project\` | When you need a broader debt scan or confirmation of a suspected issue |
+| \`get_hotspots\` | When you want to prioritize likely refactor targets |
+| \`find_dead_code\` | When you are cleaning up unused exports and obvious leftovers |
 
 ## Guiding Principles
-- Never guess code quality — verify with CodePulse metrics.
-- Prioritize Hotspots over random exploration.
-- Maintain the architectural boundaries identified in the dependency graph.
+
+- Treat CodePulse as a verifier, not a substitute for reading the code.
+- Prefer manual inspection for local or obvious changes.
+- Use the tools when you need broader context, dependency risk, or dead-code confirmation.
 `;
 
 // ─── Agent Registry ──────────────────────────────────────────────────
@@ -56,6 +47,7 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
 	{ name: "Windsurf", filename: ".windsurfrules", description: "Windsurf (Codeium)" },
 	{ name: "GitHub Copilot", filename: ".github/copilot-instructions.md", description: "Copilot Extensions" },
 	{ name: "Claude Code", filename: "CLAUDE.md", description: "Claude CLI" },
+	{ name: "Codex", filename: "CODEX.md", description: "Codex CLI" },
 	{ name: "Aider", filename: ".aider.conf.yml", description: "Aider (as comments or context)" },
 	{ name: "Cody", filename: ".cody/context.json", description: "Sourcegraph Cody" },
 	{ name: "Continue", filename: ".continue/config.json", description: "Continue.dev" },

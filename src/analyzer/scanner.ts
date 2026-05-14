@@ -1,9 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as readline from "node:readline";
 import type { ScanOptions } from "../types/index";
 
+export const MAX_ANALYSIS_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+export const MINIFIED_AVG_LINE_LENGTH = 500;
+
+const MANDATORY_EXCLUDES = ["node_modules", ".git", "dist", "build", ".venv"];
+
 function getCustomExcludes(dir: string, baseExclude: string[]): string[] {
-	const customExclude = [...baseExclude];
+	const customExclude = [...MANDATORY_EXCLUDES, ...baseExclude];
 	const ignoreFilePath = path.join(dir, ".codepulseignore");
 	if (fs.existsSync(ignoreFilePath)) {
 		const ignoreContent = fs.readFileSync(ignoreFilePath, "utf-8");
@@ -81,6 +87,113 @@ export function scanFiles(options: ScanOptions): string[] {
 
 	walk(dir);
 	return files;
+}
+
+export interface FileReadResult {
+	content: string | null;
+	byteSize: number;
+	lineCount: number;
+	averageLineLength: number;
+	skipped: boolean;
+	skipReason?: "too-large" | "minified" | "unreadable";
+}
+
+export async function readFileForAnalysis(
+	filePath: string,
+): Promise<FileReadResult> {
+	let stats: fs.Stats;
+	try {
+		stats = await fs.promises.stat(filePath);
+	} catch {
+		return {
+			content: null,
+			byteSize: 0,
+			lineCount: 0,
+			averageLineLength: 0,
+			skipped: true,
+			skipReason: "unreadable",
+		};
+	}
+
+	if (stats.size > MAX_ANALYSIS_FILE_SIZE_BYTES) {
+		return {
+			content: null,
+			byteSize: stats.size,
+			lineCount: 0,
+			averageLineLength: 0,
+			skipped: true,
+			skipReason: "too-large",
+		};
+	}
+
+	const lines: string[] = [];
+	let lineCount = 0;
+	let totalLineLength = 0;
+	const stream = fs.createReadStream(filePath, {
+		encoding: "utf-8",
+		highWaterMark: 64 * 1024,
+	});
+	const reader = readline.createInterface({
+		input: stream,
+		crlfDelay: Infinity,
+	});
+
+	try {
+		for await (const line of reader) {
+			lines.push(line);
+			lineCount++;
+			totalLineLength += line.length;
+
+			if (
+				lineCount >= 8 &&
+				totalLineLength / lineCount > MINIFIED_AVG_LINE_LENGTH
+			) {
+				reader.close();
+				stream.destroy();
+				return {
+					content: null,
+					byteSize: stats.size,
+					lineCount,
+					averageLineLength: totalLineLength / lineCount,
+					skipped: true,
+					skipReason: "minified",
+				};
+			}
+		}
+	} catch {
+		reader.close();
+		stream.destroy();
+		return {
+			content: null,
+			byteSize: stats.size,
+			lineCount,
+			averageLineLength: lineCount ? totalLineLength / lineCount : 0,
+			skipped: true,
+			skipReason: "unreadable",
+		};
+	} finally {
+		reader.close();
+	}
+
+	const averageLineLength = lineCount ? totalLineLength / lineCount : 0;
+	if (lineCount > 0 && averageLineLength > MINIFIED_AVG_LINE_LENGTH) {
+		return {
+			content: null,
+			byteSize: stats.size,
+			lineCount,
+			averageLineLength,
+			skipped: true,
+			skipReason: "minified",
+		};
+	}
+
+	return {
+		content: lines.join("\n"),
+		byteSize: stats.size,
+		lineCount,
+		averageLineLength,
+		skipped: false,
+	};
 }
 
 export function readFile(filePath: string): string {

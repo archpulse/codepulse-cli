@@ -104,14 +104,14 @@ export const TOOL_HANDLERS: Record<
 
 		sections.push("");
 		sections.push("---");
-		sections.push("**Available CodePulse tools you should use:**");
+		sections.push("**Available CodePulse tools when you need a broader check:**");
 		sections.push(
-			"- `analyze_project` — Get full issue list filtered by severity/type",
+			"- `analyze_project` — Get a filtered issue list after manual inspection",
 		);
 		sections.push(
-			"- `get_hotspots` — Find files that need refactoring most urgently",
+			"- `get_hotspots` — Find files that are good refactor candidates",
 		);
-		sections.push("- `find_dead_code` — List all unused exports to clean up");
+		sections.push("- `find_dead_code` — List unused exports when cleaning up");
 		sections.push(
 			"- `explain_concept` — Understand what any detected issue means",
 		);

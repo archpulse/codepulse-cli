@@ -6,12 +6,56 @@ import { analyze } from "../analyzer";
 import { generateReport } from "../reporter/html";
 import { generateSarif } from "../reporter/sarif";
 import { calculateHealthScore } from "../reporter/stats";
+import { runInstallDepsForProject } from "./install-deps";
 
 import type { Issue, IssueSeverity } from "../types/index";
 import { generateBadge, saveBadge } from "./badge";
 import { printStats } from "./output";
 
-function filterIssues(issues: Issue[], opts: any): Issue[] {
+type ScanDebugMode = "all" | "program" | "linter";
+
+function getScanIssueMode(opts: any): ScanDebugMode {
+	if (opts.ld) return "linter";
+	if (opts.debug) return "program";
+	return "all";
+}
+
+export function normalizeScanArgs(argv: string[]): string[] {
+	const normalized = [...argv];
+	const scanIndex = normalized.indexOf("scan");
+	if (scanIndex === -1) return normalized;
+
+	for (let i = scanIndex + 1; i < normalized.length; i++) {
+		switch (normalized[i]) {
+			case "-ld":
+				normalized[i] = "--ld";
+				break;
+			case "-diw":
+				normalized[i] = "--debug";
+				normalized.splice(i + 1, 0, "--ignore-warnings");
+				i++;
+				break;
+			case "-ldiw":
+				normalized[i] = "--ld";
+				normalized.splice(i + 1, 0, "--ignore-warnings");
+				i++;
+				break;
+			case "-iw":
+				normalized[i] = "--ignore-warnings";
+				break;
+			default:
+				break;
+		}
+	}
+
+	return normalized;
+}
+
+function filterIssues(
+	issues: Issue[],
+	opts: any,
+	mode: ScanDebugMode = "all",
+): Issue[] {
 	let result = [...issues];
 
 	if (opts.strict) {
@@ -32,6 +76,18 @@ function filterIssues(issues: Issue[], opts: any): Issue[] {
 
 	if (opts.maxIssues) {
 		result = result.slice(0, Number(opts.maxIssues));
+	}
+
+	if (opts.ignoreWarnings) {
+		result = result.filter((i) => i.severity !== "warning");
+	}
+
+	if (mode === "program") {
+		result = result.filter((i) => i.type !== "linter");
+	}
+
+	if (mode === "linter") {
+		result = result.filter((i) => i.type === "linter");
 	}
 
 	return result;
@@ -71,6 +127,34 @@ function printIssues(issues: Issue[]): void {
 		);
 	}
 	console.log("");
+}
+
+function printLinterDebug(
+	issues: Issue[],
+	emit: (text: string) => void = console.log,
+	opts: any = {},
+): void {
+	const linterIssues = filterIssues(issues, opts, "linter");
+	if (linterIssues.length === 0) {
+		emit(chalk.gray("\n  No linter diagnostics to debug.\n"));
+		return;
+	}
+
+	emit(chalk.bold(`\n  Linter Debug\n  ${"─".repeat(50)}`));
+	for (const issue of linterIssues) {
+		emit(
+			`\n  ${chalk.yellow(`[${issue.severity.toUpperCase()}]`)} ${chalk.bold(issue.file)}` +
+				(issue.line ? chalk.gray(` line ${issue.line}`) : "") +
+				`\n  ${issue.message}` +
+				(issue.context
+					? `\n${issue.context
+							.split("\n")
+							.map((line) => `  ${chalk.gray(line)}`)
+							.join("\n")}`
+					: ""),
+		);
+	}
+	emit("");
 }
 
 function printGrouped(issues: Issue[], groupBy: string): void {
@@ -142,6 +226,8 @@ export async function runScan(dir: string | undefined, opts: any) {
 	console.log(`\n${chalk.bold.cyan("  ◆ CodePulse CLI")}`);
 	console.log(chalk.gray(`  Scanning ${absDir}\n`));
 
+	await runInstallDepsForProject(absDir);
+
 	const spinner = ora({ text: "Scanning files...", color: "cyan" }).start();
 
 	try {
@@ -157,15 +243,23 @@ export async function runScan(dir: string | undefined, opts: any) {
 
 		printScanSummary(result, absDir, reportPath, badgePath, opts);
 
+		if (opts.ld) {
+			printLinterDebug(result.issues, console.log, opts);
+		}
+
 		if (opts.debug || opts.focus || opts.severity) {
-			const issues = filterIssues(result.issues, opts);
+			const issues = filterIssues(
+				result.issues,
+				opts,
+				opts.debug ? "program" : "all",
+			);
 			if (opts.groupBy) printGrouped(issues, opts.groupBy);
 			else printIssues(issues);
 		}
 
 		if (opts.open) openReport(reportPath);
 
-		exitWithCode(filterIssues(result.issues, opts), opts);
+		exitWithCode(filterIssues(result.issues, opts, getScanIssueMode(opts)), opts);
 	} catch (err) {
 		spinner.fail(chalk.red("Analysis failed"));
 		console.error(err);
@@ -191,7 +285,8 @@ function handleMissingDir(dir: string | undefined, absDir: string) {
 async function handleJsonOutput(absDir: string, opts: any) {
 	try {
 		const result = await analyze(absDir, { strict: opts.strict });
-		const issues = filterIssues(result.issues, opts);
+		const issues = filterIssues(result.issues, opts, getScanIssueMode(opts));
+		if (opts.ld) printLinterDebug(result.issues, console.error, opts);
 		console.log(JSON.stringify(issues, null, 2));
 		exitWithCode(issues, opts);
 	} catch (err) {
@@ -232,13 +327,15 @@ function printScanSummary(
 	badgePath: string,
 	opts: any,
 ) {
+	const mode = getScanIssueMode(opts);
+	const issues = filterIssues(result.issues, opts, mode);
+
 	console.log(
 		`\n  ${chalk.bold("Report:")} ${chalk.cyan(path.join(reportPath, "index.html"))}`,
 	);
 	console.log(`  ${chalk.bold("Badge:")}  ${chalk.cyan(badgePath)}`);
-	printStats(result, absDir);
+	printStats({ ...result, issues }, absDir);
 
-	const issues = filterIssues(result.issues, opts);
 	const errors = issues.filter((i) => i.severity === "error").length;
 	const warnings = issues.filter((i) => i.severity === "warning").length;
 
@@ -254,6 +351,7 @@ function printFilters(opts: any) {
 	if (opts.focus) filters.push(`focus: ${opts.focus}`);
 	if (opts.severity) filters.push(`severity: ${opts.severity}`);
 	if (opts.maxIssues) filters.push(`max: ${opts.maxIssues}`);
+	if (opts.ignoreWarnings) filters.push("ignore warnings");
 	if (opts.strict) filters.push("strict mode");
 	if (filters.length)
 		console.log(chalk.gray(`  Filters: ${filters.join("  ")}`));

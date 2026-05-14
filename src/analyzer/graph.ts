@@ -218,6 +218,12 @@ export function detectDeadExports(
 	const dead: { file: string; name: string }[] = [];
 
 	for (const file of files) {
+		// Python and most generic languages do not have reliable symbol-level
+		// export metadata here, so file-level import reachability would produce
+		// massive false positives. Restrict dead-export detection to module
+		// systems where our import graph is meaningful enough.
+		if (!/\.(?:[cm]?jsx?|tsx?)$/i.test(file.path)) continue;
+
 		if (!importedFiles.has(file.path) && file.exports.length > 0) {
 			for (const exp of file.exports) {
 				if (exp !== "default" && exp !== "module.exports") {

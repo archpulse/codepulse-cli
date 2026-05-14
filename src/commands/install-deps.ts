@@ -1,7 +1,9 @@
 import { execSync } from "node:child_process";
 import * as os from "node:os";
+import * as path from "node:path";
 import chalk from "chalk";
 import ora from "ora";
+import { scanFiles } from "../analyzer/scanner";
 
 type PackageManager =
 	| "apt-get"
@@ -45,21 +47,27 @@ const PACKAGE_MAP: Record<string, Partial<Record<PackageManager, string>>> = {
 };
 
 interface ToolDef {
+	key: string;
 	name: string;
 	checkCmd: string;
+	extensions: string[];
 	install: (pm: PackageManager | null) => void;
 }
 
 const TOOLS: ToolDef[] = [
 	{
-		name: "Biome (JS/TS)",
-		checkCmd: "biome",
+		key: "oxlint",
+		name: "Oxlint (JS/TS)",
+		checkCmd: "oxlint",
+		extensions: [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"],
 		install: () =>
-			installTool("Biome (JS/TS)", "npm install -g @biomejs/biome", "biome"),
+			installTool("Oxlint (JS/TS)", "npm install -g oxlint", "oxlint"),
 	},
 	{
+		key: "ruff",
 		name: "Ruff (Python)",
 		checkCmd: "ruff",
+		extensions: [".py"],
 		install: (pm) => {
 			const ruffPkg = getPkgName("ruff", pm);
 			if (pm && ruffPkg && (pm !== "apt-get" || isCommandAvailable("ruff"))) {
@@ -70,8 +78,10 @@ const TOOLS: ToolDef[] = [
 		},
 	},
 	{
+		key: "cppcheck",
 		name: "Cppcheck (C/C++)",
 		checkCmd: "cppcheck",
+		extensions: [".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"],
 		install: (pm) => {
 			const cppPkg = getPkgName("cppcheck", pm);
 			if (pm && cppPkg)
@@ -83,8 +93,10 @@ const TOOLS: ToolDef[] = [
 		},
 	},
 	{
+		key: "shellcheck",
 		name: "ShellCheck (Shell)",
 		checkCmd: "shellcheck",
+		extensions: [".sh", ".bash", ".zsh", ".ksh"],
 		install: (pm) => {
 			const shPkg = getPkgName("shellcheck", pm);
 			if (pm && shPkg)
@@ -96,8 +108,10 @@ const TOOLS: ToolDef[] = [
 		},
 	},
 	{
+		key: "golangci-lint",
 		name: "GolangCI-Lint (Go)",
 		checkCmd: "golangci-lint",
+		extensions: [".go"],
 		install: (pm) => {
 			const goPkg = getPkgName("golangci-lint", pm);
 			if (pm && goPkg && pm !== "apt-get") {
@@ -116,8 +130,10 @@ const TOOLS: ToolDef[] = [
 		},
 	},
 	{
+		key: "luacheck",
 		name: "Luacheck (Lua)",
 		checkCmd: "luacheck",
+		extensions: [".lua"],
 		install: (pm) => {
 			const luaPkg = getPkgName("luacheck", pm);
 			if (isCommandAvailable("luarocks")) {
@@ -129,8 +145,19 @@ const TOOLS: ToolDef[] = [
 	},
 ];
 
+const ALL_TOOL_EXTENSIONS = Array.from(
+	new Set(TOOLS.flatMap((tool) => tool.extensions)),
+);
+
 function getToolInstallers(pm: PackageManager | null) {
 	return TOOLS.map((t) => ({
+		...t,
+		install: () => t.install(pm),
+	}));
+}
+
+function getToolInstallersForTools(pm: PackageManager | null, tools: ToolDef[]) {
+	return tools.map((t) => ({
 		...t,
 		install: () => t.install(pm),
 	}));
@@ -201,6 +228,71 @@ export async function runInstallDeps(isFirstRun = false) {
 			),
 		);
 	}
+}
+
+export async function runInstallDepsForProject(
+	dir: string,
+	isFirstRun = false,
+) {
+	const pm = getPackageManager();
+	const projectTools = detectProjectTools(dir);
+	const missingTools = projectTools.filter(
+		(t) => !isCommandAvailable(t.checkCmd),
+	);
+
+	if (missingTools.length === 0) {
+		if (!isFirstRun) {
+			console.log(
+				chalk.green(
+					"\n  ✓ No missing project-specific linter dependencies found.\n",
+				),
+			);
+		}
+		return;
+	}
+
+	console.log(
+		chalk.bold.cyan(
+			`\n  ${isFirstRun ? "First-run:" : ""} Installing Project Linter Dependencies`,
+		),
+	);
+	console.log(
+		chalk.gray(
+			`  CodePulse will now install: ${missingTools.map((t) => t.name).join(", ")}\n`,
+		),
+	);
+
+	const platform = os.platform();
+	if ((platform === "linux" || platform === "darwin") && pm && pm !== "brew") {
+		preAuthenticateSudo();
+	}
+
+	for (const t of getToolInstallersForTools(pm, missingTools)) {
+		t.install();
+	}
+
+	console.log(chalk.green.bold("\n  ✓ Project dependency installation complete!\n"));
+}
+
+export function detectProjectTools(dir: string): ToolDef[] {
+	const supportedFiles = scanFiles({
+		dir,
+		extensions: ALL_TOOL_EXTENSIONS,
+		exclude: [],
+	});
+	if (supportedFiles.length === 0) return [];
+
+	const required = new Set<string>();
+	for (const filePath of supportedFiles) {
+		const ext = path.extname(filePath).toLowerCase();
+		for (const tool of TOOLS) {
+			if (tool.extensions.includes(ext)) {
+				required.add(tool.key);
+			}
+		}
+	}
+
+	return TOOLS.filter((tool) => required.has(tool.key));
 }
 
 function getPkgName(tool: string, pm: PackageManager | null): string | null {

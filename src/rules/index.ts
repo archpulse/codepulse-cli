@@ -3,9 +3,6 @@ import * as path from "node:path";
 import { getFileLayer, isDependencyAllowed } from "../analyzer/architecture";
 import type { AnalysisContext, Issue, Rule } from "../types/index";
 
-import { FastLinterRule } from "./fastLinter";
-import { VulnerabilityRule } from "./vulnerability";
-
 export class ArchitectureRule implements Rule {
 	name = "architecture-violation";
 	description =
@@ -137,6 +134,10 @@ export class DeadExportRule implements Rule {
 		const importedFiles = new Set(context.edges.map((e) => e.to));
 
 		for (const file of context.files) {
+			// Same rationale as detectDeadExports(): avoid treating Python and
+			// generic files as if they had JS-style module exports.
+			if (!/\.(?:[cm]?jsx?|tsx?)$/i.test(file.path)) continue;
+
 			if (importedFiles.has(file.path)) continue;
 			for (const exp of file.exports) {
 				if (exp === "default" || exp === "module.exports") continue;
@@ -322,10 +323,7 @@ export function runRules(
 		new CriticalNodeRule(),
 		new DeadExportRule(),
 		new DuplicationRule(),
-		new FastLinterRule(),
 		new GodFileRule(),
-		new SCARule(),
-		new VulnerabilityRule(),
 		...externalRules,
 	];
 
