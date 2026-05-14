@@ -8,7 +8,7 @@
 
 **Architectural Intelligence • Semantic Analysis • Real-time Monitoring**
 
-Deep code structure analysis for large JavaScript/TypeScript and Python projects
+Deep code structure analysis for large JavaScript/TypeScript, Python, and mixed-language projects
 
 ![CodePulse Health](./badge.svg)
 [![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse?style=for-the-badge&color=0ea5e9)](https://www.npmjs.com/package/@archpulse/codepulse)
@@ -42,6 +42,30 @@ codepulse scan .
 codepulse watch .
 ```
 
+### Scan Modes
+
+```bash
+# Program issues only
+codepulse scan . -d
+
+# Linter debug only
+codepulse scan . -ld
+
+# Hide warning-level issues
+codepulse scan . -diw
+
+# Linter debug + hide warnings
+codepulse scan . -ldiw
+```
+
+### What Scan Does
+
+- Skips `node_modules`, `.git`, `dist`, `build`, and `.venv`
+- Ignores very large or minified files before full parsing
+- Reuses cached results for unchanged files based on `mtime` and size
+- Runs core analysis, fast linters, and security checks in parallel
+- Auto-installs project-specific external linters when needed
+
 ---
 
 ## 🏆 Competitive Advantage (Report by Mythos)
@@ -52,11 +76,14 @@ CodePulse is the only tool that seamlessly unifies AST static analysis, Git-base
 |---------|-------------|
 | **🏗️ Architectural Radar** | Define layers and catch boundary violations automatically |
 | **🧠 Semantic Duplication** | AST-based structural hashing finds identical logic, not just identical lines |
-| **🔄 Circular Dependency Breaker** | Automatically detect and break circular imports (A→B→A) |
+| **🔄 Circular Dependency Breaker** | Detect circular imports and dependency loops |
 | **⚡ Real-time Watch Mode** | Interactive TUI dashboard that updates as you code |
+| **🚀 Parallel Pipeline** | Core analysis, fast linters, and security checks run concurrently |
+| **🧰 Smart Caching** | Reuses unchanged file results to speed up repeat scans |
+| **🛠️ Auto Linter Setup** | Installs the needed external linters for the current project |
 | **🎨 Beautiful CLI** | Enhanced with rich colors, ASCII art banners, and clear visualizations |
 | **🌐 7-Language Support** | Use `--lang` to switch between languages on the fly |
-| **📜 License Generator** | Generate 10+ types of open-source licenses instantly |
+| **📜 License Generator** | Generate open-source licenses instantly |
 
 ---
 
@@ -66,8 +93,15 @@ CodePulse is the only tool that seamlessly unifies AST static analysis, Git-base
 
 | Command | Description |
 |---------|-------------|
-| `codepulse scan [dir]` | Full analysis + HTML report + SARIF export |
+| `codepulse scan [dir]` | Full analysis + HTML report + badge |
+| `codepulse scan [dir] -d` | Program issues only |
+| `codepulse scan [dir] -ld` | Linter debug details only |
+| `codepulse scan [dir] -diw` | Ignore warning-level issues |
+| `codepulse scan [dir] -ldiw` | Linter debug + ignore warning-level issues |
 | `codepulse watch [dir]` | Interactive real-time TUI dashboard |
+| `codepulse install-deps` | Install project-specific external linters |
+| `codepulse mcp` | Start the MCP server for AI agents |
+| `codepulse setup-mcp` | Generate MCP config and agent rule files |
 | `codepulse plugins list` | List all available plugins with metadata |
 | `codepulse license <type>` | Generate LICENSE file (mit, apache, bsd, gpl, etc.) |
 | `codepulse stats [dir]` | Quick project statistics in console |
