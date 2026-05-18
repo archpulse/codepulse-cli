@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { DependencyEdge, FileNode, GraphNode } from "../types/index";
+import type { DependencyEdge, FileNode, GraphNode } from "../types/analysis";
 
 function createModuleMap(files: FileNode[]): Map<string, string> {
 	const moduleNameMap = new Map<string, string>();

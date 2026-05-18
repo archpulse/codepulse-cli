@@ -6,7 +6,7 @@ import * as chokidar from "chokidar";
 import logUpdate from "log-update";
 import { analyze } from "../analyzer";
 import { calculateHealthScore } from "../reporter/stats";
-import type { AnalysisCache, AnalysisResult } from "../types/index";
+import type { AnalysisCache, AnalysisResult } from "../types/analysis";
 
 export async function runWatch(dir: string, opts: any = {}) {
 	const absDir = path.resolve(dir);
@@ -66,7 +66,7 @@ export async function runWatch(dir: string, opts: any = {}) {
 			});
 			_lastResult = result;
 			renderDashboard(result, false, showFullIssues);
-		} catch (_err) {
+		} catch {
 			// Silent error
 		} finally {
 			isAnalyzing = false;

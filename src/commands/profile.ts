@@ -5,23 +5,13 @@ import { analyze } from "../analyzer";
 import { computeProfileCorrelation } from "../analyzer/profiler/debt-score";
 import { parseCProfile } from "../analyzer/profiler/parser-cprofile";
 import { parseV8Profile } from "../analyzer/profiler/parser-v8";
-import type { DebtCategory, ProfileEntry } from "../types/index";
-
-const isWin = process.platform === "win32";
-const sym = {
-	bullet: isWin ? "*" : "•",
-	check: isWin ? "v" : "✓",
-	cross: isWin ? "x" : "✗",
-	line: isWin ? "-" : "─",
-	hotspot: isWin ? "!" : "🔴",
-	dormant: isWin ? "~" : "🟡",
-	io: isWin ? ">" : "🔵",
-};
+import type { DebtCategory, ProfileEntry } from "../types/profiler";
+import { SYMBOLS } from "../utils/terminal";
 
 const CATEGORY_LABELS: Record<DebtCategory, { icon: string; label: string }> = {
-	"active-hotspot": { icon: sym.hotspot, label: "Active Hotspot" },
-	"dormant-debt": { icon: sym.dormant, label: "Dormant Debt" },
-	"io-bound": { icon: sym.io, label: "I/O Bound" },
+	"active-hotspot": { icon: SYMBOLS.hotspot, label: "Active Hotspot" },
+	"dormant-debt": { icon: SYMBOLS.dormant, label: "Dormant Debt" },
+	"io-bound": { icon: SYMBOLS.io, label: "I/O Bound" },
 };
 
 /**
@@ -97,9 +87,9 @@ function parseProfile(
 function printProfileReport(result: any, topN: number): void {
 	const { matched, unmatchedEntries, totalProfileEntries, matchRate } = result;
 
-	console.log(`\n${chalk.bold.cyan(`  ${sym.line.repeat(52)}`)}`);
+	console.log(`\n${chalk.bold.cyan(`  ${SYMBOLS.line.repeat(52)}`)}`);
 	console.log(chalk.bold.white("  Runtime Complexity Correlation"));
-	console.log(`${chalk.cyan(`  ${sym.line.repeat(52)}`)}\n`);
+	console.log(`${chalk.cyan(`  ${SYMBOLS.line.repeat(52)}`)}\n`);
 
 	console.log(
 		`  ${chalk.gray("Profile entries:")} ${chalk.white(totalProfileEntries)}`,
@@ -147,7 +137,7 @@ function printProfileReport(result: any, topN: number): void {
 	// Table header
 	const header = `  ${"Function".padEnd(25)} ${"File".padEnd(30)} ${"CC".padStart(4)} ${"Self".padStart(8)} ${"Score".padStart(6)} Category`;
 	console.log(chalk.bold.gray(header));
-	console.log(chalk.gray(`  ${sym.line.repeat(90)}`));
+	console.log(chalk.gray(`  ${SYMBOLS.line.repeat(90)}`));
 
 	for (const item of topItems) {
 		const catInfo = CATEGORY_LABELS[item.category as DebtCategory];

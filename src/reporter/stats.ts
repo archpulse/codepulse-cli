@@ -1,4 +1,4 @@
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 
 export function buildStats(result: AnalysisResult) {
 	const top10Complex = [...result.files]

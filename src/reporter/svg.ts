@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 
 export function buildGraphSvg(result: AnalysisResult): string {
 	const nodes = Array.from(result.graph.values()).sort(

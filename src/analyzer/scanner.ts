@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline";
-import type { ScanOptions } from "../types/index";
+import type { ScanOptions } from "../types/config";
 
 export const MAX_ANALYSIS_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 export const MINIFIED_AVG_LINE_LENGTH = 500;
@@ -27,10 +27,15 @@ function shouldExcludeFile(
 	relPath: string,
 	customExclude: string[],
 ): boolean {
+	// Normalize path to use forward slashes for matching
+	const normalizedRelPath = relPath.split(path.sep).join("/");
+
 	return customExclude.some((ex) => {
 		if (ex.startsWith("*")) return entryName.includes(ex.slice(1));
 		return (
-			relPath === ex || relPath.startsWith(ex + path.sep) || entryName === ex
+			normalizedRelPath === ex ||
+			normalizedRelPath.startsWith(ex + "/") ||
+			entryName === ex
 		);
 	});
 }

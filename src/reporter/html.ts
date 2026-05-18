@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 import { buildStats } from "./stats";
 import { buildGraphSvg } from "./svg";
 import { buildHtml } from "./template";

@@ -1,19 +1,7 @@
 import * as path from "node:path";
 import chalk from "chalk";
-import type { AnalysisResult } from "../types/index";
-
-const isWin = process.platform === "win32";
-
-const SYMBOLS = {
-	line: isWin ? "=" : "━",
-	thinLine: isWin ? "-" : "─",
-	check: isWin ? "v" : "✓",
-	cross: isWin ? "x" : "✗",
-	warn: isWin ? "!" : "⚠",
-	fire: isWin ? "*" : "🔥",
-	radio: isWin ? "[!]" : "☢",
-	info: isWin ? "i" : "ℹ",
-};
+import type { AnalysisResult } from "../types/analysis";
+import { SYMBOLS } from "../utils/terminal";
 
 export function printStats(result: AnalysisResult, dir: string): void {
 	console.log(`\n${chalk.bold.cyan(SYMBOLS.line.repeat(52))}`);

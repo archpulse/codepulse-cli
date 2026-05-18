@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadAnalysisCache, pruneAnalysisCache, saveAnalysisCache } from "./cache";
-import type { AnalysisCache, FileNode } from "../types/index";
+import type { AnalysisCache, FileNode } from "../types/analysis";
 
 function makeFileNode(overrides: Partial<FileNode> = {}): FileNode {
 	return {

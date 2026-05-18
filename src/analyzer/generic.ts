@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { FileNode } from "../types/index";
+import type { FileNode } from "../types/analysis";
 import { createFileNode, initializeFileAnalysis } from "./utils";
 
 const _GOD_FILE_LINES = 500;
@@ -48,7 +48,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 		importPatterns: [/require\s*\(?\s*['"]([^'"]+)['"]\s*\)?/g],
 		exportPatterns: [/^function\s+(\w[\w.]*)\s*\(/gm],
 		funcPatterns: [/(?:local\s+)?function\s+(\w[\w.]*)\s*\(/g],
-		complexityKeywords: /\b(if|elseif|for|while|repeat|and|or)\b/g,
+		complexityKeywords: /\b(if|elseif|for|while|repeat|and|or|until)\b/g,
 	},
 	".css": {
 		importPatterns: [/@import\s+['"]([^'"]+)['"]/g],
@@ -67,6 +67,12 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 		exportPatterns: [],
 		funcPatterns: [],
 		complexityKeywords: /\b(if|for|while|switch)\b/g,
+	},
+	".go": {
+		importPatterns: [/import\s+(?:\(\s*([\s\S]*?)\s*\)|"([^"]+)")/g],
+		exportPatterns: [/func\s+([A-Z]\w*)\s*\(/g, /type\s+([A-Z]\w*)\s+/g],
+		funcPatterns: [/func\s+(?:\(\s*[^)]+\s*\)\s*)?(\w+)\s*\(/g],
+		complexityKeywords: /\b(if|for|switch|case|go|defer|select)\b|&&|\|\|/g,
 	},
 };
 

@@ -1,3 +1,4 @@
+export * from "./agent";
 export * from "./badge";
 export * from "./coupling";
 export * from "./explain";

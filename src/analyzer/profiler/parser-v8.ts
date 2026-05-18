@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ProfileEntry } from "../../types/index";
+import type { ProfileEntry } from "../../types/profiler";
 
 /**
  * Parses a V8 .cpuprofile (Chrome DevTools / Node.js) file into

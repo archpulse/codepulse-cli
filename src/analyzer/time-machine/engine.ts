@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import * as path from "node:path";
 import type {
 	CommitSnapshot,
-	FileNode,
 	SamplingStrategy,
 	SerializedFileNode,
 	TimeMachineCache,
 	TimeMachineResult,
-} from "../../types/index";
+} from "../../types/time-machine";
+import type { FileNode } from "../../types/analysis";
 import { analyzeFile } from "../ast";
 import { buildGraph } from "../graph";
 import {

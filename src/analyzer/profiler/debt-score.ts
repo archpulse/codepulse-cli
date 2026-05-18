@@ -1,12 +1,12 @@
 import type {
 	DebtCategory,
 	DebtScore,
-	FileNode,
 	MatchConfidence,
 	MatchResult,
 	ProfileCorrelationResult,
 	ProfileEntry,
-} from "../../types/index";
+} from "../../types/profiler";
+import type { FileNode } from "../../types/analysis";
 import { matchProfileToAST } from "./matcher";
 
 const CONFIDENCE_WEIGHTS: Record<MatchConfidence, number> = {

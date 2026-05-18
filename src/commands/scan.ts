@@ -8,7 +8,7 @@ import { generateSarif } from "../reporter/sarif";
 import { calculateHealthScore } from "../reporter/stats";
 import { runInstallDepsForProject } from "./install-deps";
 
-import type { Issue, IssueSeverity } from "../types/index";
+import type { Issue, IssueSeverity } from "../types/analysis";
 import { generateBadge, saveBadge } from "./badge";
 import { printStats } from "./output";
 
@@ -362,9 +362,9 @@ function openReport(reportPath: string) {
 	const reportFile = path.join(reportPath, "index.html");
 	const openCmd =
 		process.platform === "win32"
-			? `start ${reportFile}`
+			? `start "" "${reportFile}"`
 			: process.platform === "darwin"
-				? `open ${reportFile}`
-				: `xdg-open ${reportFile}`;
+				? `open "${reportFile}"`
+				: `xdg-open "${reportFile}"`;
 	exec(openCmd);
 }

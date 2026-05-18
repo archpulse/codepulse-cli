@@ -38,35 +38,137 @@ export interface AgentConfig {
 	name: string;
 	filename: string;
 	global?: boolean; // If some agents prefer home directory
+	type: "prompt" | "rule";
 	description: string;
 }
 
 export const SUPPORTED_AGENTS: AgentConfig[] = [
-	{ name: "Cline", filename: ".clinerules", description: "Cline / Roo-Cline" },
-	{ name: "Cursor", filename: ".cursorrules", description: "Cursor IDE" },
-	{ name: "Windsurf", filename: ".windsurfrules", description: "Windsurf (Codeium)" },
-	{ name: "GitHub Copilot", filename: ".github/copilot-instructions.md", description: "Copilot Extensions" },
-	{ name: "Claude Code", filename: "CLAUDE.md", description: "Claude CLI" },
-	{ name: "Codex", filename: "CODEX.md", description: "Codex CLI" },
-	{ name: "Aider", filename: ".aider.conf.yml", description: "Aider (as comments or context)" },
-	{ name: "Cody", filename: ".cody/context.json", description: "Sourcegraph Cody" },
-	{ name: "Continue", filename: ".continue/config.json", description: "Continue.dev" },
-	{ name: "PearAI", filename: ".pearrules", description: "PearAI" },
-	{ name: "Supermaven", filename: ".supermavenrules", description: "Supermaven" },
-	{ name: "Void", filename: ".voidrules", description: "Void Editor" },
-	{ name: "Antigravity", filename: ".antigravityrules", description: "Antigravity AI" },
-	{ name: "Gemini CLI", filename: ".gemini-instructions.md", description: "Gemini CLI Agent" },
-	{ name: "Qwen", filename: ".qwenrules", description: "Qwen AI" },
-	{ name: "AMP", filename: ".amprules", description: "AMP (AI-Modified Projects)" },
-	{ name: "OpenCode", filename: ".opencoderules", description: "OpenCode" },
-	{ name: "Kilo", filename: ".kilorules", description: "Kilo CLI" },
-	{ name: "Trae", filename: ".traerules", description: "Trae IDE" },
-	{ name: "Pi Coding Agent", filename: ".pirules", description: "Pi Coding Agent" },
-	{ name: "Kiro CLI", filename: ".kirorules", description: "Kiro CLI" },
-	// Global variants
-	{ name: "Cline Global", filename: ".clinerules", global: true, description: "Global Cline rules" },
-	{ name: "Cursor Global", filename: ".cursorrules", global: true, description: "Global Cursor rules" },
-	{ name: "Gemini CLI Global", filename: ".gemini-instructions.md", global: true, description: "Global Gemini CLI rules" },
+	{
+		name: "Cline",
+		filename: ".clinerules",
+		type: "prompt",
+		description: "Cline / Roo-Cline",
+	},
+	{
+		name: "Cursor",
+		filename: "AGENTS.md",
+		type: "prompt",
+		description: "Cursor IDE",
+	},
+	{
+		name: "Windsurf",
+		filename: "agents.md",
+		type: "prompt",
+		description: "Windsurf (Codeium)",
+	},
+	{
+		name: "GitHub Copilot",
+		filename: ".github/copilot-instructions.md",
+		type: "prompt",
+		description: "Copilot Extensions",
+	},
+	{
+		name: "Claude Code",
+		filename: "CLAUDE.md",
+		type: "prompt",
+		description: "Claude CLI",
+	},
+	{
+		name: "Codex",
+		filename: "AGENTS.md",
+		type: "prompt",
+		description: "Codex CLI",
+	},
+	{
+		name: "Aider",
+		filename: "CONVENTIONS.md",
+		type: "prompt",
+		description: "Aider (as comments or context)",
+	},
+	{
+		name: "Cody",
+		filename: "AGENT.md",
+		type: "prompt",
+		description: "Sourcegraph Cody",
+	},
+	{
+		name: "Continue",
+		filename: ".continue/rules/codepulse.md",
+		type: "prompt",
+		description: "Continue.dev",
+	},
+	{
+		name: "PearAI",
+		filename: "AGENT.md",
+		type: "prompt",
+		description: "PearAI",
+	},
+	{
+		name: "Supermaven",
+		filename: "AGENT.md",
+		type: "prompt",
+		description: "Supermaven",
+	},
+	{
+		name: "Void",
+		filename: "AGENT.md",
+		type: "prompt",
+		description: "Void Editor"
+	},
+	{
+		name: "Antigravity",
+		filename: "agent.md",
+		type: "prompt",
+		description: "Antigravity AI"
+	},
+	{
+		name: "Gemini CLI",
+		filename: "gemini.md",
+		type: "prompt",
+		description: "Gemini CLI Agent"
+	},
+	{
+		name: "Qwen",
+		filename: "QWEN.md",
+		type: "prompt",
+		description: "Qwen AI"
+	},
+	{
+		name: "AMP",
+		filename: "AGENTS.md",
+		type: "prompt",
+		description: "AMP (AI-Modified Projects)"
+	},
+	{
+		name: "OpenCode",
+		filename: "AGENTS.md",
+		type: "prompt",
+		description: "OpenCode"
+	},
+	{
+		name: "Kilo",
+		filename: "AGENTS.md",
+		type: "prompt",
+		description: "Kilo CLI"
+	},
+	{
+		name: "Trae",
+		filename: "AGENT.md",
+		type: "prompt",
+		description: "Trae IDE"
+	},
+	{
+		name: "Pi Coding Agent",
+		filename: "SKILL.md",
+		type: "prompt",
+		description: "Pi Coding Agent"
+	},
+	{
+		name: "Kiro CLI",
+		filename: ".kiro/steering/codepulse.md",
+		type: "prompt",
+		description: "Kiro CLI"
+	},
 ];
 
 /**
@@ -76,7 +178,8 @@ export function generateAllAgentRules(targetDir: string) {
 	const generated: { path: string; name: string }[] = [];
 
 	for (const agent of SUPPORTED_AGENTS) {
-		const baseDir = agent.global ? os.homedir() : path.join(targetDir, "rules");
+		// Rules go to home dir (global), Prompts go to project root
+		const baseDir = agent.type === "rule" ? os.homedir() : targetDir;
 		const filePath = path.join(baseDir, agent.filename);
 		
 		try {
@@ -105,7 +208,7 @@ export function generateAllAgentRules(targetDir: string) {
 
 			fs.writeFileSync(filePath, content, "utf-8");
 			generated.push({ path: filePath, name: agent.name });
-		} catch (err) {
+		} catch {
 			// Skip failed files (permission issues etc)
 		}
 	}

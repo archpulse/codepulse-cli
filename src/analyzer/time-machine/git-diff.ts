@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import type { DiffEntry } from "../../types/index";
+import type { DiffEntry } from "../../types/time-machine";
 
 /**
  * Returns a list of commit SHAs with dates, from oldest to newest.

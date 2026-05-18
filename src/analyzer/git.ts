@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
-import type { FileNode, Hotspot } from "../types/index";
+import type { FileNode } from "../types/analysis";
+import type { Hotspot } from "../types/git";
 
 export function getGitChurn(dir: string): Map<string, number> {
 	const churnMap = new Map<string, number>();
@@ -13,7 +14,7 @@ export function getGitChurn(dir: string): Map<string, number> {
 		for (const file of files) {
 			churnMap.set(file, (churnMap.get(file) || 0) + 1);
 		}
-	} catch (_err) {}
+	} catch {}
 	return churnMap;
 }
 
@@ -113,7 +114,7 @@ export function getTemporalCoupling(
 				}
 			}
 		}
-	} catch (_err) {}
+	} catch {}
 
 	return couplings.sort((a, b) => b.couplingDegree - a.couplingDegree);
 }

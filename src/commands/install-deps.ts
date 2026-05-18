@@ -12,7 +12,9 @@ type PackageManager =
 	| "zypper"
 	| "apk"
 	| "brew"
-	| "choco";
+	| "choco"
+	| "scoop"
+	| "winget";
 
 function getLinuxPackageManager(): PackageManager | null {
 	if (isCommandAvailable("apt-get")) return "apt-get";
@@ -31,17 +33,21 @@ const INSTALL_COMMANDS: Record<PackageManager, (pkg: string) => string> = {
 	apk: (pkg) => `sudo apk add ${pkg}`,
 	brew: (pkg) => `brew install ${pkg}`,
 	choco: (pkg) => `choco install ${pkg} -y`,
+	scoop: (pkg) => `scoop install ${pkg}`,
+	winget: (pkg) => `winget install --exact --id ${pkg} --silent`,
 };
 
 // Map generic tool names to distro-specific package names if they differ
 const PACKAGE_MAP: Record<string, Partial<Record<PackageManager, string>>> = {
-	ruff: { apk: "ruff" },
-	cppcheck: { apk: "cppcheck" },
-	shellcheck: { apk: "shellcheck" },
+	ruff: { apk: "ruff", winget: "Astral.Ruff" },
+	cppcheck: { apk: "cppcheck", winget: "Cppcheck.Cppcheck" },
+	shellcheck: { apk: "shellcheck", winget: "koalaman.shellcheck" },
 	"golangci-lint": {
 		pacman: "golangci-lint",
 		brew: "golangci-lint",
 		choco: "golangci-lint",
+		scoop: "golangci-lint",
+		winget: "Golang.GolangCI-Lint",
 	},
 	luacheck: { "apt-get": "lua-check", pacman: "luacheck" },
 };
@@ -57,11 +63,11 @@ interface ToolDef {
 const TOOLS: ToolDef[] = [
 	{
 		key: "oxlint",
-		name: "Oxlint (JS/TS)",
+		name: "Oxlint (JS/TS/React)",
 		checkCmd: "oxlint",
 		extensions: [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"],
 		install: () =>
-			installTool("Oxlint (JS/TS)", "npm install -g oxlint", "oxlint"),
+			installTool("Oxlint (JS/TS/React)", "npm install -g oxlint", "oxlint"),
 	},
 	{
 		key: "ruff",
@@ -130,6 +136,25 @@ const TOOLS: ToolDef[] = [
 		},
 	},
 	{
+		key: "revive",
+		name: "Revive (Go)",
+		checkCmd: "revive",
+		extensions: [".go"],
+		install: (pm) => {
+			if (isCommandAvailable("go")) {
+				installTool(
+					"Revive (Go)",
+					"go install github.com/mgechev/revive@latest",
+					"revive",
+				);
+			} else if (pm) {
+				const revivePkg = pm === "pacman" ? "revive" : null;
+				if (revivePkg)
+					installTool("Revive (Go)", INSTALL_COMMANDS[pm](revivePkg), "revive");
+			}
+		},
+	},
+	{
 		key: "luacheck",
 		name: "Luacheck (Lua)",
 		checkCmd: "luacheck",
@@ -140,6 +165,38 @@ const TOOLS: ToolDef[] = [
 				installTool("Luacheck (Lua)", "luarocks install luacheck", "luacheck");
 			} else if (pm && luaPkg) {
 				installTool("Luacheck (Lua)", INSTALL_COMMANDS[pm](luaPkg), "luacheck");
+			}
+		},
+	},
+	{
+		key: "selene",
+		name: "Selene (Lua)",
+		checkCmd: "selene",
+		extensions: [".lua"],
+		install: (pm) => {
+			if (isCommandAvailable("cargo")) {
+				installTool("Selene (Lua)", "cargo install selene", "selene");
+			} else if (pm === "brew") {
+				installTool("Selene (Lua)", "brew install selene", "selene");
+			} else if (pm === "scoop") {
+				installTool("Selene (Lua)", "scoop install selene", "selene");
+			}
+		},
+	},
+	{
+		key: "clippy",
+		name: "Clippy (Rust)",
+		checkCmd: "cargo-clippy",
+		extensions: [".rs"],
+		install: (pm) => {
+			if (isCommandAvailable("rustup")) {
+				installTool("Clippy (Rust)", "rustup component add clippy", "cargo-clippy");
+			} else if (isCommandAvailable("cargo")) {
+				installTool("Clippy (Rust)", "cargo install clippy", "cargo-clippy");
+			} else if (pm) {
+				// Most PMs package cargo/rustc together
+				const rustPkg = pm === "pacman" ? "rust" : "rustc";
+				installTool("Rust/Cargo", INSTALL_COMMANDS[pm](rustPkg), "cargo");
 			}
 		},
 	},
@@ -169,7 +226,7 @@ function preAuthenticateSudo() {
 	);
 	try {
 		execSync("sudo -v", { stdio: "inherit" });
-	} catch (_e) {
+	} catch {
 		console.log(
 			chalk.red("  ✗ Sudo authentication failed. Skipping system packages."),
 		);
@@ -179,7 +236,10 @@ function preAuthenticateSudo() {
 function getPackageManager(): PackageManager | null {
 	const platform = os.platform();
 	if (platform === "win32") {
-		return isCommandAvailable("choco") ? "choco" : null;
+		if (isCommandAvailable("scoop")) return "scoop";
+		if (isCommandAvailable("winget")) return "winget";
+		if (isCommandAvailable("choco")) return "choco";
+		return null;
 	}
 	if (platform === "darwin") {
 		return isCommandAvailable("brew") ? "brew" : null;
@@ -221,10 +281,12 @@ export async function runInstallDeps(isFirstRun = false) {
 
 	console.log(chalk.green.bold("\n  ✓ Dependency installation complete!\n"));
 
-	if (platform === "win32") {
+	if (platform === "win32" && pm) {
+		const pmName =
+			pm === "choco" ? "Chocolatey" : pm === "scoop" ? "Scoop" : "WinGet";
 		console.log(
 			chalk.cyan(
-				"  Note: On Windows, you may need to restart your terminal to use newly installed Chocolatey packages.\n",
+				`  Note: On Windows, you may need to restart your terminal to use newly installed ${pmName} packages.\n`,
 			),
 		);
 	}
@@ -302,8 +364,12 @@ function getPkgName(tool: string, pm: PackageManager | null): string | null {
 
 function isCommandAvailable(cmd: string): boolean {
 	try {
-		const checkCmd = os.platform() === "win32" ? "where" : "which";
-		execSync(`${checkCmd} ${cmd}`, { stdio: "ignore" });
+		if (os.platform() === "win32") {
+			// On Windows, 'where' is more reliable for PATH lookups in Node
+			execSync(`where ${cmd}`, { stdio: "ignore" });
+		} else {
+			execSync(`which ${cmd}`, { stdio: "ignore" });
+		}
 		return true;
 	} catch {
 		return false;
@@ -321,7 +387,7 @@ function installTool(name: string, command: string, checkCmd: string) {
 		// But since we ran sudo -v, this should be silent
 		execSync(command, { stdio: "ignore" });
 		spinner.succeed(chalk.green(`Installed ${name}`));
-	} catch (_err: any) {
+	} catch {
 		spinner.fail(
 			chalk.red(
 				`Failed to install ${name}. Try manually: ${chalk.white(command)}`,

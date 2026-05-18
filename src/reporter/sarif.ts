@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 
 export function generateSarif(result: AnalysisResult, baseDir: string): string {
 	const sarif = {

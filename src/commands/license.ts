@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import chalk from "chalk";
 import { t } from "../utils/i18n";
+import { SYMBOLS } from "../utils/terminal";
 
 const LICENSES: Record<string, string> = {
 	mit: `MIT License
@@ -163,12 +164,9 @@ const LICENSE_DESC_KEYS: Record<string, string> = {
 };
 
 export function runLicense(type: string, name: string = "Your Name"): void {
-	const isWin = process.platform === "win32";
-	const check = isWin ? "v" : "✓";
-
 	if (type === "help") {
 		console.log(`\n${chalk.bold.cyan(`  ${t("license.supported")}`)}`);
-		console.log(chalk.gray("  ─────────────────────────────"));
+		console.log(chalk.gray(`${SYMBOLS.thinLine.repeat(30)}`));
 		Object.keys(LICENSES).forEach((key) => {
 			const desc = t(LICENSE_DESC_KEYS[key] || "");
 			console.log(
@@ -199,7 +197,7 @@ export function runLicense(type: string, name: string = "Your Name"): void {
 
 	console.log(
 		chalk.green(
-			`\n  ${check} ${t("license.success", { type: type.toUpperCase() })}`,
+			`\n  ${SYMBOLS.check} ${t("license.success", { type: type.toUpperCase() })}`,
 		),
 	);
 }

@@ -40,8 +40,10 @@
 	},
 	"devDependencies": {
 		"@types/babel__traverse": "^7.20.4",
+		"@types/inquirer": "^9.0.9",
 		"@types/node": "^20.19.40",
 		"@types/update-notifier": "^6.0.8",
+		"inquirer": "^13.4.3",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.5"
 	},

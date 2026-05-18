@@ -2,7 +2,7 @@ import * as path from "node:path";
 import chalk from "chalk";
 import ora from "ora";
 import { analyze } from "../analyzer";
-import type { AnalysisResult } from "../types";
+import type { AnalysisResult } from "../types/analysis";
 
 /**
  * CLI handler for `codepulse pr-risk`.

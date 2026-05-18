@@ -1,4 +1,4 @@
-import type { SamplingStrategy } from "../../types/index";
+import type { SamplingStrategy } from "../../types/time-machine";
 
 interface CommitInfo {
 	sha: string;

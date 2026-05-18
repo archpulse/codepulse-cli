@@ -1,11 +1,10 @@
 import * as path from "node:path";
+import type { FileNode, FunctionNode } from "../../types/analysis";
 import type {
-	FileNode,
-	FunctionNode,
 	MatchConfidence,
 	MatchResult,
 	ProfileEntry,
-} from "../../types/index";
+} from "../../types/profiler";
 
 interface IndexedFunction extends FunctionNode {
 	_filePath: string;
@@ -215,8 +214,8 @@ function levenshtein(a: string, b: string): number {
 	if (b.length === 0) return a.length;
 
 	// Use two-row optimization
-	let prev = new Array(b.length + 1);
-	let curr = new Array(b.length + 1);
+	let prev = Array.from({ length: b.length + 1 }) as number[];
+	let curr = Array.from({ length: b.length + 1 }) as number[];
 
 	for (let j = 0; j <= b.length; j++) prev[j] = j;
 

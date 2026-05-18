@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Rule } from "../types/index";
+import type { Rule } from "../types/rules";
 
 export interface PluginInfo {
 	name: string;
@@ -51,7 +51,7 @@ async function forEachPlugin(
 						callback(ruleInstance, entry.name);
 					}
 				}
-			} catch (_err) {
+			} catch {
 				// Silently skip or log depending on context
 			}
 		}

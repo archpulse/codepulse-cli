@@ -1,4 +1,4 @@
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 import { calculateHealthScore } from "./stats";
 import { getCss, getScripts } from "./template-parts";
 

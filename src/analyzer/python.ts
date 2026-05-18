@@ -1,4 +1,4 @@
-import type { FileNode } from "../types/index";
+import type { FileNode } from "../types/analysis";
 import { createFileNode, initializeFileAnalysis } from "./utils";
 
 export function analyzePythonFile(

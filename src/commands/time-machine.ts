@@ -2,14 +2,14 @@ import * as path from "node:path";
 import chalk from "chalk";
 import ora from "ora";
 import { runTimeMachine } from "../analyzer/time-machine/engine";
-import type { SamplingStrategy } from "../types/index";
+import type { SamplingStrategy } from "../types/time-machine";
+import { SYMBOLS } from "../utils/terminal";
 
-const isWin = process.platform === "win32";
 const sym = {
-	bullet: isWin ? "*" : "•",
-	check: isWin ? "v" : "✓",
-	arrow: isWin ? "->" : "→",
-	line: isWin ? "-" : "─",
+	bullet: SYMBOLS.bullet,
+	check: SYMBOLS.check,
+	arrow: SYMBOLS.line === "-" ? "->" : "→",
+	line: SYMBOLS.line,
 };
 
 /**

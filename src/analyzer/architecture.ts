@@ -1,4 +1,4 @@
-import type { ProjectConfig } from "../types/index";
+import type { ProjectConfig } from "../types/config";
 
 /**
  * Maps a file path to its architectural layer based on the project configuration.

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AnalysisResult } from "../types/index";
+import type { AnalysisResult } from "../types/analysis";
 
 export function generateBadge(_result: AnalysisResult, score: number): string {
 	const color = score > 90 ? "#10B981" : score > 70 ? "#F59E0B" : "#EF4444";

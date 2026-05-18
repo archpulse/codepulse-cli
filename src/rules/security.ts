@@ -4,7 +4,7 @@ import * as path from "node:path";
 import * as parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-import type { AnalysisContext, Issue } from "../types/index";
+import type { AnalysisContext, Issue } from "../types/analysis";
 
 const SECURITY_MAX_CONCURRENCY = Math.max(
 	2,
@@ -77,30 +77,50 @@ export async function runSecurityChecks(
 }
 
 async function runSCAChecks(rootDir: string): Promise<Issue[]> {
+	const issues: Issue[] = [];
+	
+	// Node.js SCA
 	const pkgPath = path.join(rootDir, "package.json");
-	try {
-		const content = await fs.promises.readFile(pkgPath, "utf-8");
-		const pkg = JSON.parse(content);
-		const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-		const issues: Issue[] = [];
+	if (fs.existsSync(pkgPath)) {
+		try {
+			const content = await fs.promises.readFile(pkgPath, "utf-8");
+			const pkg = JSON.parse(content);
+			const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 
-		for (const [name, version] of Object.entries(deps)) {
-			const vuln = SCA_DB[name];
-			if (vuln && isVulnerable(String(version), vuln.version)) {
+			for (const [name, version] of Object.entries(deps)) {
+				const vuln = SCA_DB[name];
+				if (vuln && isVulnerable(String(version), vuln.version)) {
+					issues.push({
+						type: "dependency-vulnerability",
+						severity: "error",
+						file: "package.json",
+						message: `${name}@${version}: ${vuln.message}`,
+						suggestion: `Run 'npm install ${name}@latest' to fix.`,
+					});
+				}
+			}
+		} catch {}
+	}
+
+	// Rust SCA (very basic example, could be expanded)
+	const cargoPath = path.join(rootDir, "Cargo.lock");
+	if (fs.existsSync(cargoPath)) {
+		try {
+			const content = await fs.promises.readFile(cargoPath, "utf-8");
+			// Simplified check for some known vulnerable crates
+			if (content.includes('name = "openssl"') && content.includes('version = "0.10.30"')) {
 				issues.push({
 					type: "dependency-vulnerability",
 					severity: "error",
-					file: "package.json",
-					message: `${name}@${version}: ${vuln.message}`,
-					suggestion: `Run 'npm install ${name}@latest' to fix.`,
+					file: "Cargo.lock",
+					message: "openssl@0.10.30: Multiple vulnerabilities. Upgrade to 0.10.48+",
+					suggestion: "Run 'cargo update openssl' to fix.",
 				});
 			}
-		}
-
-		return issues;
-	} catch {
-		return [];
+		} catch {}
 	}
+
+	return issues;
 }
 
 async function runVulnerabilityChecks(
@@ -117,6 +137,7 @@ async function runVulnerabilityChecks(
 				checkAST(content, file.relativePath, issues);
 			}
 
+			const isRust = /\.rs$/i.test(file.path);
 			const lines = content.split(/\r?\n/);
 			for (let i = 0; i < lines.length; i++) {
 				const line = lines[i].trim();
@@ -126,6 +147,17 @@ async function runVulnerabilityChecks(
 					line.startsWith("/*")
 				) {
 					continue;
+				}
+
+				if (isRust && /\bunsafe\s*\{/.test(line)) {
+					issues.push({
+						type: "vulnerability",
+						severity: "warning",
+						file: file.relativePath,
+						line: i + 1,
+						message: "Unsafe block detected.",
+						suggestion: "Ensure this block is properly audited and necessary.",
+					});
 				}
 
 				for (const pattern of REGEX_PATTERNS) {

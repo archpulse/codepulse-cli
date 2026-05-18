@@ -2,20 +2,23 @@ import * as path from "node:path";
 import * as parser from "@babel/parser";
 import traverse, { type NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-import type { FileNode, FunctionNode } from "../types/index";
+import type { FileNode, FunctionNode } from "../types/analysis";
 import { generateFunctionFingerprint } from "./ast-fingerprint";
 import { analyzeGenericFile } from "./generic";
 import { analyzePythonFile } from "./python";
+import { analyzeRustFile } from "./rust";
 import { createFileNode, initializeFileAnalysis } from "./utils";
 
 const JS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const PYTHON_EXTENSIONS = new Set([".py"]);
+const RUST_EXTENSIONS = new Set([".rs"]);
 const GENERIC_EXTENSIONS = new Set([
 	".java",
 	".cpp",
 	".c",
 	".cs",
 	".lua",
+	".go",
 	".css",
 	".scss",
 	".html",
@@ -30,6 +33,8 @@ export function analyzeFile(
 
 	if (PYTHON_EXTENSIONS.has(ext))
 		return analyzePythonFile(filePath, baseDir, contentOverride);
+	if (RUST_EXTENSIONS.has(ext))
+		return analyzeRustFile(filePath, baseDir, contentOverride);
 	if (GENERIC_EXTENSIONS.has(ext))
 		return analyzeGenericFile(filePath, baseDir, contentOverride);
 	if (!JS_EXTENSIONS.has(ext)) return null;

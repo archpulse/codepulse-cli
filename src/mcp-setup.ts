@@ -152,7 +152,7 @@ export function setupMcpConfigs() {
 				if (updateConfigByPath(configPath, mcpConfig)) {
 					configuredCount++;
 				}
-			} catch (_err) {
+			} catch {
 				// Silently ignore
 			}
 		}

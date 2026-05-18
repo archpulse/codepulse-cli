@@ -1,7 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { getFileLayer, isDependencyAllowed } from "../analyzer/architecture";
-import type { AnalysisContext, Issue, Rule } from "../types/index";
+import type { AnalysisContext, Issue } from "../types/analysis";
+import type { Rule } from "../types/rules";
 
 export class ArchitectureRule implements Rule {
 	name = "architecture-violation";
@@ -286,7 +287,7 @@ export class SCARule implements Rule {
 						});
 					}
 				}
-			} catch (_err) {}
+			} catch {}
 		}
 
 		return issues;
@@ -331,7 +332,7 @@ export function runRules(
 	for (const rule of rules) {
 		try {
 			issues = issues.concat(rule.run(context));
-		} catch (_err) {}
+		} catch {}
 	}
 
 	return issues;
