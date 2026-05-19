@@ -3,11 +3,12 @@ import * as parser from "@babel/parser";
 import traverse, { type NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import type { FileNode, FunctionNode } from "../types/analysis";
-import { generateFunctionFingerprint } from "./ast-fingerprint";
 import { analyzeGenericFile } from "./generic";
 import { analyzePythonFile } from "./python";
 import { analyzeRustFile } from "./rust";
 import { createFileNode, initializeFileAnalysis } from "./utils";
+
+import { generateFunctionFingerprint } from "./ast-fingerprint";
 
 const JS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const PYTHON_EXTENSIONS = new Set([".py"]);
@@ -67,7 +68,10 @@ export function analyzeFile(
 			AssignmentExpression(p) {
 				handleModuleExport(p, exports);
 			},
-			"FunctionDeclaration|FunctionExpression|ArrowFunctionExpression"(p: any) {
+			ClassDeclaration(p) {
+				handleClass(p, functions, exports);
+			},
+			"FunctionDeclaration|FunctionExpression|ArrowFunctionExpression"(p: NodePath<t.Node>) {
 				handleFunction(p, functions, exports);
 			},
 		});
@@ -86,6 +90,34 @@ export function analyzeFile(
 	);
 }
 
+function handleClass(
+	p: NodePath<t.ClassDeclaration>,
+	functions: FunctionNode[],
+	exports: string[],
+) {
+	const { node } = p;
+	const name = node.id?.name ?? "anonymous_class";
+
+	const startLine = node.loc?.start.line ?? 0;
+	const endLine = node.loc?.end.line ?? 0;
+	
+	let complexity = 1;
+	t.traverseFast(node, (n) => {
+		if (isComplexityNode(n)) complexity++;
+	});
+
+	const isExported = exports.some((e) => e === name);
+
+	functions.push({
+		name,
+		startLine,
+		endLine,
+		complexity,
+		isExported,
+		// classes don't need fingerprints for now as they are handled by methods usually
+	});
+}
+
 function parseContent(content: string): t.File | null {
 	try {
 		return parser.parse(content, {
@@ -99,7 +131,6 @@ function parseContent(content: string): t.File | null {
 				"nullishCoalescingOperator",
 				"dynamicImport",
 			],
-			errorRecovery: true,
 		});
 	} catch {
 		return null;
@@ -109,36 +140,13 @@ function parseContent(content: string): t.File | null {
 function handleRequire(p: NodePath<t.CallExpression>, imports: string[]) {
 	const { node } = p;
 	if (
-		t.isIdentifier(node.callee, { name: "require" }) &&
-		node.arguments.length === 1
+		t.isIdentifier(node.callee) &&
+		node.callee.name === "require" &&
+		node.arguments.length > 0 &&
+		t.isStringLiteral(node.arguments[0])
 	) {
-		const arg = node.arguments[0];
-		if (t.isStringLiteral(arg)) imports.push(arg.value);
+		imports.push(node.arguments[0].value);
 	}
-}
-
-function handleNamedExportDeclaration(declaration: any, exports: string[]) {
-	if (t.isFunctionDeclaration(declaration) && declaration.id) {
-		exports.push(declaration.id.name);
-	} else if (t.isVariableDeclaration(declaration)) {
-		declaration.declarations.forEach((decl: any) => {
-			if (t.isIdentifier(decl.id)) exports.push(decl.id.name);
-		});
-	} else if (t.isClassDeclaration(declaration) && declaration.id) {
-		exports.push(declaration.id.name);
-	}
-}
-
-function handleNamedExportSpecifiers(specifiers: any[], exports: string[]) {
-	specifiers.forEach((spec: any) => {
-		if (t.isExportSpecifier(spec)) {
-			exports.push(
-				t.isIdentifier(spec.exported)
-					? spec.exported.name
-					: (spec.exported as any).value,
-			);
-		}
-	});
 }
 
 function handleNamedExport(
@@ -147,14 +155,25 @@ function handleNamedExport(
 	imports: string[],
 ) {
 	const { node } = p;
+	if (node.declaration) {
+		if (t.isVariableDeclaration(node.declaration)) {
+			for (const decl of node.declaration.declarations) {
+				if (t.isIdentifier(decl.id)) exports.push(decl.id.name);
+			}
+		} else if (
+			t.isFunctionDeclaration(node.declaration) ||
+			t.isClassDeclaration(node.declaration)
+		) {
+			if (node.declaration.id) exports.push(node.declaration.id.name);
+		}
+	}
 	if (node.source) {
 		imports.push(node.source.value);
 	}
-	if (node.declaration) {
-		handleNamedExportDeclaration(node.declaration, exports);
-	}
-	if (node.specifiers) {
-		handleNamedExportSpecifiers(node.specifiers, exports);
+	for (const spec of node.specifiers) {
+		if (t.isExportSpecifier(spec) && t.isIdentifier(spec.exported)) {
+			exports.push(spec.exported.name);
+		}
 	}
 }
 
@@ -162,34 +181,34 @@ function handleDefaultExport(
 	p: NodePath<t.ExportDefaultDeclaration>,
 	exports: string[],
 ) {
-	const { node } = p;
-	if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
-		exports.push(node.declaration.id.name);
-	} else {
-		exports.push("default");
-	}
+	exports.push("default");
 }
 
 function handleModuleExport(
 	p: NodePath<t.AssignmentExpression>,
 	exports: string[],
 ) {
-	const { node } = p;
+	const { left } = p.node;
 	if (
-		t.isMemberExpression(node.left) &&
-		t.isIdentifier(node.left.object, { name: "module" }) &&
-		t.isIdentifier(node.left.property, { name: "exports" })
+		t.isMemberExpression(left) &&
+		t.isIdentifier(left.object) &&
+		left.object.name === "module" &&
+		t.isIdentifier(left.property) &&
+		left.property.name === "exports"
 	) {
 		exports.push("module.exports");
 	}
 }
 
-function resolveFunctionName(node: t.Node, parent: t.Node): string {
+function resolveFunctionName(node: t.Node, parent: t.Node | null): string {
 	if (t.isFunctionDeclaration(node) && node.id) {
 		return node.id.name;
 	}
 	if (t.isVariableDeclarator(parent) && t.isIdentifier(parent.id)) {
 		return parent.id.name;
+	}
+	if (t.isAssignmentExpression(parent) && t.isIdentifier(parent.left)) {
+		return parent.left.name;
 	}
 	if (t.isObjectProperty(parent) && t.isIdentifier(parent.key)) {
 		return parent.key.name;
@@ -201,7 +220,7 @@ function resolveFunctionName(node: t.Node, parent: t.Node): string {
 }
 
 function handleFunction(
-	p: NodePath<any>,
+	p: NodePath<t.Node>,
 	functions: FunctionNode[],
 	exports: string[],
 ) {
@@ -210,15 +229,15 @@ function handleFunction(
 
 	const startLine = node.loc?.start.line ?? 0;
 	const endLine = node.loc?.end.line ?? 0;
-	const complexity = calculateComplexity(node);
-	const isExported = exports.some((e) => e === name);
+	
+	let complexity = 1;
+	
+	t.traverseFast(node, (n) => {
+		if (isComplexityNode(n)) complexity++;
+	});
 
-	let fingerprint: string | undefined;
-	try {
-		fingerprint = generateFunctionFingerprint(node);
-	} catch {
-		// Fallback for complex trees
-	}
+	const fingerprint = generateFunctionFingerprint(node);
+	const isExported = exports.some((e) => e === name);
 
 	functions.push({
 		name,
@@ -228,15 +247,6 @@ function handleFunction(
 		isExported,
 		fingerprint,
 	});
-}
-
-function calculateComplexity(node: t.Node): number {
-	let complexity = 1;
-	// Use a simple walker instead of full traverse for performance
-	t.traverseFast(node, (n) => {
-		if (isComplexityNode(n)) complexity++;
-	});
-	return complexity;
 }
 
 function isLoopNode(n: t.Node): boolean {

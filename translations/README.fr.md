@@ -141,6 +141,35 @@ codepulse plugins list --json
 
 ---
 
+## 🤖 Support des agents IA (MCP)
+
+CodePulse inclut un serveur **Model Context Protocol (MCP)** natif, permettant aux agents IA (comme Claude, Cursor et autres) d'effectuer une analyse architecturale approfondie de votre code.
+
+### Configuration pour les agents IA
+
+```bash
+# Générer la config MCP et les règles d'agent
+codepulse setup-mcp
+```
+
+Cette commande va :
+1. Configurer votre IDE IA compatible MCP.
+2. Générer `.cursorrules`, `.clinerules` et `CODEX.md` à la racine de votre projet.
+3. Activer « l'intelligence architecturale » pour votre assistant IA.
+
+### Outils d'agent disponibles (17+ outils)
+
+| Outil | Description |
+|------|-------------|
+| `codepulse_identity` | Bilan de santé du projet et identification des fichiers critiques |
+| `get_file_context` | Dossier architectural du fichier (liens, risques, complexité) |
+| `predict_change_impact` | Prédiction de l'impact des changements (rayon d'action) |
+| `find_similar_functions` | Similarité structurelle via AST |
+| `suggest_split_strategy` | Stratégie de décomposition pour les God Files |
+| `simulate_edit` | Validation des changements avant application |
+
+---
+
 ## 📚 Documentation
 
 - **📐 [Architecture et flux de travail internes](../docs/ARCHITECTURE.md)** — Comprenez comment CodePulse fonctionne sous le capot
@@ -148,7 +177,27 @@ codepulse plugins list --json
 
 ---
 
-## 📸 Exemples visuels
+## 🚀 Performance Architecturale
+
+CodePulse est une **plateforme d'intelligence architecturale**. Alors que les linters standard analysent une syntaxe isolée, CodePulse calcule l'état systémique de toute la structure de votre projet, ses dépendances et ses risques évolutifs.
+
+### Efficacité de la Performance : Analyse Systémique vs. Linting Traditionnel
+
+Nous utilisons le linting statique traditionnel (ESLint) comme base de référence pour démontrer l'efficacité de notre moteur d'analyse systémique.
+
+| Capacité | Linting Statique Traditionnel | CodePulse (Systémique) |
+|----------|:----------------------------:|:----------------------:|
+| **Portée de l'analyse** | Fichier par fichier | **Structurelle globale** |
+| **Modèle de contexte** | Contexte AST isolé | **Graphe de projet persistant** |
+| Style d'analyse | Orienté règles | **Structurel + patterns** |
+| **Temps moyen** | ~4.8s | **~2.8s** |
+| **RAM de travail** | ~103 MB | **~175 MB** |
+
+> **Note** : ESLint est utilisé ici comme base de référence familière pour l'analyse statique orientée fichier, et non comme une comparaison directe d'équivalence de fonctionnalités.
+> **Benchmark** : Projet de 27k LOC | moyenne sur 5 passages | exécutions à froid | Intel i3-1005G1 / 8GB RAM.
+> Méthodologie complète dans [BENCHMARKS.md](../docs/BENCHMARKS.md).
+
+---
 
 <table>
   <tr>

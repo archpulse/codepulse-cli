@@ -5,11 +5,18 @@ import type { DependencyEdge, FileNode, GraphNode } from "../types/analysis";
 function createModuleMap(files: FileNode[]): Map<string, string> {
 	const moduleNameMap = new Map<string, string>();
 	for (const file of files) {
-		const noExt = path.basename(file.path, path.extname(file.path));
-		const rel = file.relativePath.replace(/\\/g, "/");
-		moduleNameMap.set(noExt, file.path);
-		const relNoExt = rel.replace(/\.[^.]+$/, "");
-		moduleNameMap.set(relNoExt, file.path);
+		const filePath = file.path;
+		const lastSlash = filePath.lastIndexOf("/");
+		const lastDot = filePath.lastIndexOf(".");
+		const noExt = filePath.substring(
+			lastSlash + 1,
+			lastDot > lastSlash ? lastDot : filePath.length
+		);
+		const rel = file.relativePath;
+		moduleNameMap.set(noExt, filePath);
+		const relLastDot = rel.lastIndexOf(".");
+		const relNoExt = relLastDot > -1 ? rel.substring(0, relLastDot) : rel;
+		moduleNameMap.set(relNoExt, filePath);
 	}
 	return moduleNameMap;
 }
@@ -56,8 +63,9 @@ function calculateCentrality(graph: Map<string, GraphNode>) {
 
 	const criticalThreshold = Math.max(3, maxCentrality * 0.6);
 	for (const node of graph.values()) {
+		const isTypeFile = node.id.includes("/types/") || node.id.endsWith(".d.ts");
 		node.isCritical =
-			node.centrality >= criticalThreshold || node.inDegree >= 5;
+			!isTypeFile && (node.centrality >= criticalThreshold || node.inDegree >= 5);
 	}
 }
 
@@ -120,8 +128,7 @@ export function buildGraph(
 	const seenEdges = new Set<string>();
 
 	for (const file of files) {
-		const ext = path.extname(file.path);
-		const isPython = ext === ".py";
+		const isPython = file.path.endsWith(".py");
 		processFileImports(
 			file,
 			isPython,
@@ -158,6 +165,20 @@ export function buildGraph(
 	return { edges, graph, circularDependencies };
 }
 
+let cachedSearchBase: string | null = null;
+
+function getSearchBase(baseDir: string): string {
+	if (cachedSearchBase) return cachedSearchBase;
+	const appSrc = path.join(baseDir, "app", "src");
+	const rootSrc = path.join(baseDir, "src");
+	cachedSearchBase = fs.existsSync(appSrc)
+		? appSrc
+		: fs.existsSync(rootSrc)
+			? rootSrc
+			: baseDir;
+	return cachedSearchBase;
+}
+
 function resolveRelative(
 	fromFile: string,
 	importPath: string,
@@ -173,13 +194,7 @@ function resolveRelative(
 
 	if (importPath.startsWith("@/")) {
 		// Handle @/ alias common in Vite/Next.js
-		const appSrc = path.join(baseDir, "app", "src");
-		const rootSrc = path.join(baseDir, "src");
-		const searchBase = fs.existsSync(appSrc)
-			? appSrc
-			: fs.existsSync(rootSrc)
-				? rootSrc
-				: baseDir;
+		const searchBase = getSearchBase(baseDir);
 		resolvedBase = path.resolve(searchBase, importPath.slice(2));
 	} else if (importPath.startsWith(".")) {
 		const dir = path.dirname(fromFile);

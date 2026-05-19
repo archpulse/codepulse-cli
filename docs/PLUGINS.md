@@ -4,8 +4,13 @@ Extend CodePulse analysis with your own custom rules. Plugins have full access t
 
 ## 📂 Plugin Locations
 
-CodePulse loads plugins from a global directory based on your operating system:
+CodePulse loads plugins from both global and project-local directories:
 
+### Project-Local Plugins
+CodePulse automatically discovers and loads plugins from the `./plugins/` directory in your project root. This is ideal for team-specific rules that should be versioned with the codebase.
+
+### Global Plugins
+Based on your operating system:
 - **Linux**: `~/.config/codepulse/plugins`
 - **macOS**: `~/Library/Application Support/codepulse/plugins`
 - **Windows**: `%APPDATA%\codepulse\plugins`

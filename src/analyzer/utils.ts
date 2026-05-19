@@ -3,8 +3,8 @@ import type { FileNode, FunctionNode } from "../types/analysis";
 
 import { countLines, readFile } from "./scanner";
 
-export const GOD_FILE_LINES = 500;
-export const GOD_FILE_IMPORTS = 15;
+export const GOD_FILE_LINES = 1000;
+export const GOD_FILE_IMPORTS = 30;
 
 export function initializeFileAnalysis(
 	filePath: string,

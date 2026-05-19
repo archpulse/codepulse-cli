@@ -10,6 +10,8 @@
 
 Deep code structure analysis for large JavaScript/TypeScript, Python, and mixed-language projects
 
+**v5 Engineering Honesty:** Featuring our new non-linear scoring model and 🛡️ Confidence Metric.
+
 ![CodePulse Health](./badge.svg)
 [![NPM Version](https://img.shields.io/npm/v/@archpulse/codepulse?style=for-the-badge&color=0ea5e9)](https://www.npmjs.com/package/@archpulse/codepulse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
@@ -42,29 +44,60 @@ codepulse scan .
 codepulse watch .
 ```
 
-### Scan Modes
+---
+
+## 🚀 Performance & Analysis Engines
+
+CodePulse offers two distinct analysis paths. We are transparent about our runtime: we don't just lint; we build a systemic model of your entire project.
+
+### Fast Mode (Ultra-fast scanning)
+*Focus: Instant feedback on core structural health.*
+
+| Tool | Engine | Runtime (s) |
+|------|--------|-------------|
+| **ESLint** | Baseline | ~4.8s |
+| **CodePulse** | **Oxlint Engine** | **~2.8s** |
+
+### Extended Analysis Mode (Full Ecosystem Compatibility)
+*Focus: Deep architectural insights + full ESLint rule compatibility.*
+
+| Tool | Engine | Runtime (s) |
+|------|--------|-------------|
+| **ESLint** | Raw Baseline | ~3.3s |
+| **CodePulse** | **ESLint + Systemic Analysis** | **~5.5s** |
+
+> **Why the difference?**
+> In **Extended Analysis Mode**, CodePulse executes your project's full ESLint suite **plus** its own systemic analysis (dependency graph, circularity detection, architectural boundary checks, and historical churn). The result is a unified report that combines ecosystem-standard linting with deep structural intelligence.
+
+---
+
+## 🔍 Scan Modes & Engines
+
+### Engine Selection
+
+```bash
+# Auto-detect (Default)
+# Uses ESLint if config is found, otherwise Oxlint
+codepulse scan .
+
+# Force ultra-fast mode
+codepulse scan . --engine oxlint
+
+# Force extended analysis mode (higher precision/compatibility)
+codepulse scan . --engine eslint
+# or
+codepulse scan . --precision
+```
+
+### Verbose / Debug Modes
 
 ```bash
 # Program issues only
 codepulse scan . -d
 
-# Linter debug only
+# Linter debug only (shows raw tool output)
 codepulse scan . -ld
-
-# Hide warning-level issues
-codepulse scan . -diw
-
-# Linter debug + hide warnings
-codepulse scan . -ldiw
 ```
-
-### What Scan Does
-
-- Skips `node_modules`, `.git`, `dist`, `build`, and `.venv`
-- Ignores very large or minified files before full parsing
-- Reuses cached results for unchanged files based on `mtime` and size
-- Runs core analysis, fast linters, and security checks in parallel
-- Auto-installs project-specific external linters when needed
 
 ---
 
@@ -176,14 +209,61 @@ codepulse plugins list --json
 
 ---
 
+## 🤖 AI Agent Support (MCP)
+
+CodePulse includes a native **Model Context Protocol (MCP)** server, allowing AI agents (like Claude, Cursor, and others) to perform deep architectural analysis of your codebase.
+
+### Setup for AI Agents
+
+```bash
+# Generate MCP config and agent rules
+codepulse setup-mcp
+```
+
+This command will:
+1.  Configure your MCP-compatible AI IDE.
+2.  Generate `.cursorrules`, `.clinerules`, and `CODEX.md` in your project root.
+3.  Enable "Architectural Intelligence" for your AI assistant.
+
+### Available Agent Tools (17+ tools)
+
+| Tool | Description |
+|------|-------------|
+| `codepulse_identity` | Project health score and critical file identification |
+| `get_file_context` | Architectural dossier of a file (coupling, risk, complexity) |
+| `predict_change_impact` | Predict the blast radius of a change to a specific symbol |
+| `find_similar_functions` | AST-based structural duplication search across the project |
+| `suggest_split_strategy` | Concrete decomposition plan for God Files |
+| `simulate_edit` | Validate proposed code for syntax and architectural impact |
+
+---
+
 ## 📚 Documentation
 
+- **🚀 [Performance Benchmarks](./docs/BENCHMARKS.md)** — See how CodePulse compares to other tools
 - **📐 [Architecture & Internal Workflows](./docs/ARCHITECTURE.md)** — Understand how CodePulse works under the hood
 - **🔌 [Plugin System Development](./docs/PLUGINS.md)** — Build your own analysis rules
 
 ---
 
-## 📸 Visual Examples
+## 🚀 Architectural Performance
+
+CodePulse is an **Architectural Intelligence Platform**. While standard linters analyze isolated syntax, CodePulse computes the systemic health of your entire project structure, dependencies, and evolutionary risks.
+
+### Performance Efficiency: Systemic vs. Traditional Analysis
+
+| Capability | Traditional Static Linting | CodePulse (Oxlint Mode) | CodePulse (ESLint Mode) |
+|------------|:--------------------------:|:-----------------------:|:-----------------------:|
+| **Analysis Scope** | File-scoped | **Whole-project structural** | **Whole-project structural** |
+| **Context Model** | Isolated AST | **Project Graph** | **Project Graph** |
+| **Average Runtime** | ~3.3s | **~2.8s** | **~5.5s** |
+| **Engine** | ESLint | **Oxlint** | **ESLint** |
+
+> **Note**: ESLint is used here as a familiar file-oriented static analysis baseline, not as a direct feature-equivalent comparison.
+> **Benchmark**: 27,000 LOC project | 5-run average | cold runs | Intel i3-1005G1 / 8GB RAM.
+> Full methodology in [BENCHMARKS.md](./docs/BENCHMARKS.md).
+
+---
 
 See CodePulse in action:
 

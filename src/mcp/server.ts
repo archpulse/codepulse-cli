@@ -8,8 +8,8 @@ import {
 import { TOOL_DEFINITIONS } from "./definitions";
 import { TOOL_HANDLERS } from "./handlers";
 
-async function handleMcpToolCall(name: string, args: any) {
-	const dir = args?.dir || process.cwd();
+async function handleMcpToolCall(name: string, args: Record<string, unknown>) {
+	const dir = (args?.dir as string) || process.cwd();
 	const absDir = path.resolve(dir);
 
 	const handler = TOOL_HANDLERS[name];
@@ -37,13 +37,14 @@ export async function runMcpServer() {
 		return { tools: TOOL_DEFINITIONS };
 	});
 
-	server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
+	server.setRequestHandler(CallToolRequestSchema, async (request) => {
 		try {
-			const { name, arguments: args } = request.params;
+			const { name, arguments: args } = request.params as { name: string, arguments: Record<string, unknown> };
 			return await handleMcpToolCall(name, args);
-		} catch (err: any) {
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : String(err);
 			return {
-				content: [{ type: "text", text: `Error: ${err.message}` }],
+				content: [{ type: "text", text: `Error: ${message}` }],
 				isError: true,
 			};
 		}

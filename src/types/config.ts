@@ -12,6 +12,7 @@ export interface ProjectConfig {
 	duplicationThreshold?: number;
 	exclude?: string[];
 	rootDir?: string;
+	precision?: boolean | "auto";
 	architecture?: {
 		layers: ArchitectureLayer[];
 		strict?: boolean;

@@ -27,7 +27,9 @@ describe("install deps tool detection", () => {
 				"golangci-lint",
 				"luacheck",
 				"oxlint",
+				"revive",
 				"ruff",
+				"selene",
 				"shellcheck",
 			]);
 		} finally {

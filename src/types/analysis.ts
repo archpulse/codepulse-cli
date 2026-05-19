@@ -75,6 +75,7 @@ export interface AnalysisContext {
 	graph: Map<string, GraphNode>;
 	edges: DependencyEdge[];
 	config: ProjectConfig;
+	circularDependencies: string[][];
 }
 
 export interface AnalysisResult {
@@ -91,4 +92,6 @@ export interface AnalysisResult {
 	totalLines: number;
 	avgComplexity: number;
 	issues: Issue[];
+	resolvedPrecision?: boolean;
+	unparsedFiles: string[];
 }

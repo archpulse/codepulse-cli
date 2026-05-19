@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { AnalysisResult } from "../types/analysis";
+import type { AnalysisResult, DependencyEdge, FileNode, GraphNode } from "../types/analysis";
 
 export function buildGraphSvg(result: AnalysisResult): string {
 	const nodes = Array.from(result.graph.values()).sort(
@@ -25,8 +25,10 @@ export function buildGraphSvg(result: AnalysisResult): string {
 </svg>`;
 }
 
-function calculateNodePositions(nodes: any[], cx: number, cy: number) {
-	const positions = new Map<string, { x: number; y: number }>();
+interface Position { x: number; y: number }
+
+function calculateNodePositions(nodes: GraphNode[], cx: number, cy: number) {
+	const positions = new Map<string, Position>();
 
 	const layer0 = nodes.slice(0, 3);
 	const layer1 = nodes.slice(3, 11);
@@ -40,8 +42,8 @@ function calculateNodePositions(nodes: any[], cx: number, cy: number) {
 }
 
 function applyCircularLayout(
-	layer: any[],
-	positions: Map<string, any>,
+	layer: GraphNode[],
+	positions: Map<string, Position>,
 	cx: number,
 	cy: number,
 	radius: number,
@@ -56,7 +58,7 @@ function applyCircularLayout(
 	});
 }
 
-function renderEdges(edges: any[], positions: Map<string, any>) {
+function renderEdges(edges: DependencyEdge[], positions: Map<string, Position>) {
 	let lines = "";
 	for (const edge of edges) {
 		const from = positions.get(edge.from);
@@ -69,9 +71,9 @@ function renderEdges(edges: any[], positions: Map<string, any>) {
 }
 
 function renderNodes(
-	nodes: any[],
+	nodes: GraphNode[],
 	result: AnalysisResult,
-	positions: Map<string, any>,
+	positions: Map<string, Position>,
 ) {
 	const allBasenames = result.files.map((f) => path.basename(f.relativePath));
 	let circles = "";
@@ -85,7 +87,7 @@ function renderNodes(
 			: file?.isGodFile
 				? "#F59E0B"
 				: "#6366F1";
-		const label = getLabel(file, n.id, allBasenames);
+		const label = getLabel(file || null, n.id, allBasenames);
 
 		circles += `
       <g>
@@ -97,7 +99,7 @@ function renderNodes(
 	return circles;
 }
 
-function getLabel(file: any, id: string, allBasenames: string[]): string {
+function getLabel(file: FileNode | null, id: string, allBasenames: string[]): string {
 	let label = path.basename(file?.relativePath || id);
 	const isDuplicate = allBasenames.filter((b) => b === label).length > 1;
 	if (isDuplicate && file) {

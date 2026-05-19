@@ -9,6 +9,7 @@ import { readFileForAnalysis } from "./scanner";
 export interface FileAnalysisJob {
 	index: number;
 	filePath: string;
+	stats?: fs.Stats;
 }
 
 export interface FileAnalysisWorkerResult {
@@ -21,8 +22,10 @@ export const FILE_ANALYSIS_WORKER_ROLE = "file-analysis-worker";
 export function getWorkerCount(fileCount: number): number {
 	if (fileCount <= 1) return 1;
 	const available = os.availableParallelism?.() ?? os.cpus().length ?? 2;
-	const clamped = Math.max(2, Math.min(24, available));
-	return Math.min(clamped, fileCount);
+	// Memory optimization: don't over-allocate workers on small/medium machines.
+	// For small projects, 4 workers is usually plenty.
+	const maxWorkers = fileCount < 1000 ? Math.min(available, 4) : Math.min(available, 12);
+	return Math.max(2, maxWorkers);
 }
 
 export function finalizeFileNode(
@@ -40,6 +43,10 @@ export function finalizeFileNode(
 	result.isGodFile =
 		result.lines > (config.godFileLines || 500) ||
 		result.imports.length > (config.godFileImports || 15);
+	
+	// Memory optimization: clear content before saving to cache or returning
+	result.content = "";
+	
 	if (cache && filePath) cache.fileNodes.set(filePath, result);
 	return result;
 }
@@ -109,6 +116,35 @@ export async function analyzeAndFinalizeFile(
 	}
 }
 
+export async function analyzeAndFinalizeFileWithStats(
+	filePath: string,
+	stats: fs.Stats,
+	dir: string,
+	churnMap: Map<string, number>,
+	config: ProjectConfig,
+	cache?: AnalysisCache,
+): Promise<FileNode | null> {
+	try {
+		const fileData = await readFileForAnalysis(filePath);
+		if (!fileData.content) return null;
+
+		const result = analyzeFile(filePath, dir, fileData.content);
+		if (!result) return null;
+
+		return finalizeFileNode(
+			result,
+			churnMap,
+			config,
+			stats.mtimeMs,
+			stats.size,
+			cache,
+			filePath,
+		);
+	} catch {
+		return null;
+	}
+}
+
 export async function processFilesSequentially(
 	filePaths: string[],
 	dir: string,
@@ -152,7 +188,7 @@ export async function processFilesWithWorkers(
 ): Promise<FileNode[]> {
 	const results: (FileNode | null)[] = Array.from({ length: filePaths.length }) as (FileNode | null)[];
 	results.fill(null);
-	const { pendingJobs, processedCount } = prepareJobs(
+	const { pendingJobs, processedCount } = await prepareJobs(
 		filePaths,
 		results,
 		churnMap,
@@ -161,11 +197,11 @@ export async function processFilesWithWorkers(
 		silent,
 	);
 
-	let processed = processedCount;
+	const processed = processedCount;
 	const total = filePaths.length;
 
 	const workerCount = getWorkerCount(pendingJobs.length);
-	if (workerCount === 1) {
+	if (workerCount === 1 || pendingJobs.length < 50) {
 		return runJobsSequentially(
 			pendingJobs,
 			results,
@@ -198,7 +234,7 @@ export async function processFilesWithWorkers(
 	return results.filter((file): file is FileNode => file !== null);
 }
 
-function prepareJobs(
+async function prepareJobs(
 	filePaths: string[],
 	results: (FileNode | null)[],
 	churnMap: Map<string, number>,
@@ -210,35 +246,45 @@ function prepareJobs(
 	let processedCount = 0;
 	const total = filePaths.length;
 
-	for (let index = 0; index < filePaths.length; index++) {
-		const filePath = filePaths[index];
-		try {
-			const stats = fs.statSync(filePath);
-			if (cache?.fileNodes.has(filePath)) {
-				const cached = cache.fileNodes.get(filePath)!;
-				if (
-					cached.mtime === stats.mtimeMs &&
-					(cached.size === undefined || cached.size === stats.size)
-				) {
-					results[index] = finalizeFileNode(
-						cached,
-						churnMap,
-						config,
-						stats.mtimeMs,
-						stats.size,
-						cache,
-						filePath,
-					);
-					processedCount++;
-					updateProgress(silent, processedCount, total);
-					continue;
-				}
+	const statResults = await Promise.all(
+		filePaths.map(async (filePath, index) => {
+			try {
+				const stats = await fs.promises.stat(filePath);
+				return { filePath, index, stats };
+			} catch {
+				return { filePath, index, stats: null };
 			}
-			pendingJobs.push({ index, filePath });
-		} catch {
+		})
+	);
+
+	for (const { filePath, index, stats } of statResults) {
+		if (!stats) {
 			processedCount++;
 			updateProgress(silent, processedCount, total);
+			continue;
 		}
+
+		if (cache?.fileNodes.has(filePath)) {
+			const cached = cache.fileNodes.get(filePath)!;
+			if (
+				cached.mtime === stats.mtimeMs &&
+				(cached.size === undefined || cached.size === stats.size)
+			) {
+				results[index] = finalizeFileNode(
+					cached,
+					churnMap,
+					config,
+					stats.mtimeMs,
+					stats.size,
+					cache,
+					filePath,
+				);
+				processedCount++;
+				updateProgress(silent, processedCount, total);
+				continue;
+			}
+		}
+		pendingJobs.push({ index, filePath, stats });
 	}
 	return { pendingJobs, processedCount };
 }
@@ -256,8 +302,9 @@ async function runJobsSequentially(
 ): Promise<FileNode[]> {
 	let currentProcessed = processed;
 	for (const job of pendingJobs) {
-		results[job.index] = await analyzeAndFinalizeFile(
+		results[job.index] = await analyzeAndFinalizeFileWithStats(
 			job.filePath,
+			job.stats!,
 			dir,
 			churnMap,
 			config,
@@ -266,7 +313,6 @@ async function runJobsSequentially(
 		currentProcessed++;
 		updateProgress(silent, currentProcessed, total);
 	}
-	if (!silent) process.stdout.write("\n");
 	return results.filter((file): file is FileNode => file !== null);
 }
 

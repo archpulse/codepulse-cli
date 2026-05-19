@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as readline from "node:readline";
 import type { ScanOptions } from "../types/config";
 
 export const MAX_ANALYSIS_FILE_SIZE_BYTES = 2 * 1024 * 1024;
@@ -40,57 +39,83 @@ function shouldExcludeFile(
 	});
 }
 
-function processDirectoryEntry(
-	entry: fs.Dirent,
-	currentDir: string,
-	baseDir: string,
-	customExclude: string[],
-	extensions: string[],
-	files: string[],
-	walkFn: (d: string) => void,
-) {
-	const fullPath = path.join(currentDir, entry.name);
-	const relPath = path.relative(baseDir, fullPath);
+export async function scanFilesAsync(options: ScanOptions): Promise<string[]> {
+	const { dir, extensions, exclude } = options;
+	const files: string[] = [];
+	const customExclude = getCustomExcludes(dir, exclude);
+	const excludeSet = new Set(customExclude);
 
-	if (shouldExcludeFile(entry.name, relPath, customExclude)) return;
+	const stack = [dir];
+	while (stack.length > 0) {
+		const currentDir = stack.pop()!;
+		let entries: fs.Dirent[];
+		try {
+			entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
+		} catch {
+			continue;
+		}
 
-	if (entry.isDirectory()) {
-		walkFn(fullPath);
-	} else if (entry.isFile()) {
-		const ext = path.extname(entry.name).toLowerCase();
-		if (extensions.includes(ext)) {
-			files.push(fullPath);
+		for (let i = 0; i < entries.length; i++) {
+			const entry = entries[i];
+			const entryName = entry.name;
+			
+			if (excludeSet.has(entryName)) continue;
+
+			const fullPath = path.join(currentDir, entryName);
+			const relPath = path.relative(dir, fullPath);
+
+			if (shouldExcludeFile(entryName, relPath, customExclude)) continue;
+
+			if (entry.isDirectory()) {
+				stack.push(fullPath);
+			} else {
+				const ext = path.extname(entryName).toLowerCase();
+				if (extensions.includes(ext)) {
+					files.push(fullPath);
+				}
+			}
 		}
 	}
+	return files;
 }
 
 export function scanFiles(options: ScanOptions): string[] {
 	const { dir, extensions, exclude } = options;
 	const files: string[] = [];
 	const customExclude = getCustomExcludes(dir, exclude);
+	const excludeSet = new Set(customExclude);
 
-	function walk(currentDir: string): void {
+	const stack = [dir];
+	while (stack.length > 0) {
+		const currentDir = stack.pop()!;
 		let entries: fs.Dirent[];
 		try {
 			entries = fs.readdirSync(currentDir, { withFileTypes: true });
 		} catch {
-			return;
+			continue;
 		}
 
-		for (const entry of entries) {
-			processDirectoryEntry(
-				entry,
-				currentDir,
-				dir,
-				customExclude,
-				extensions,
-				files,
-				walk,
-			);
+		for (let i = 0; i < entries.length; i++) {
+			const entry = entries[i];
+			const entryName = entry.name;
+			
+			if (excludeSet.has(entryName)) continue;
+
+			const fullPath = path.join(currentDir, entryName);
+			const relPath = path.relative(dir, fullPath);
+
+			if (shouldExcludeFile(entryName, relPath, customExclude)) continue;
+
+			if (entry.isDirectory()) {
+				stack.push(fullPath);
+			} else {
+				const ext = path.extname(entryName).toLowerCase();
+				if (extensions.includes(ext)) {
+					files.push(fullPath);
+				}
+			}
 		}
 	}
-
-	walk(dir);
 	return files;
 }
 
@@ -131,74 +156,45 @@ export async function readFileForAnalysis(
 		};
 	}
 
-	const lines: string[] = [];
-	let lineCount = 0;
-	let totalLineLength = 0;
-	const stream = fs.createReadStream(filePath, {
-		encoding: "utf-8",
-		highWaterMark: 64 * 1024,
-	});
-	const reader = readline.createInterface({
-		input: stream,
-		crlfDelay: Infinity,
-	});
-
 	try {
-		for await (const line of reader) {
-			lines.push(line);
-			lineCount++;
-			totalLineLength += line.length;
+		const buffer = await fs.promises.readFile(filePath);
+		const content = buffer.toString("utf-8");
+		
+		const lines = content.split("\n");
+		// Remove trailing empty line to match readline behavior
+		const lineCount = lines.length > 1 && lines[lines.length - 1] === "" 
+			? lines.length - 1 
+			: lines.length;
+		const avgLineLength = content.length / (lineCount || 1);
 
-			if (
-				lineCount >= 8 &&
-				totalLineLength / lineCount > MINIFIED_AVG_LINE_LENGTH
-			) {
-				reader.close();
-				stream.destroy();
-				return {
-					content: null,
-					byteSize: stats.size,
-					lineCount,
-					averageLineLength: totalLineLength / lineCount,
-					skipped: true,
-					skipReason: "minified",
-				};
-			}
+		if (lineCount > 0 && avgLineLength > MINIFIED_AVG_LINE_LENGTH) {
+			return {
+				content: null,
+				byteSize: stats.size,
+				lineCount,
+				averageLineLength: avgLineLength,
+				skipped: true,
+				skipReason: "minified",
+			};
 		}
+
+		return {
+			content,
+			byteSize: stats.size,
+			lineCount,
+			averageLineLength: avgLineLength,
+			skipped: false,
+		};
 	} catch {
-		reader.close();
-		stream.destroy();
 		return {
 			content: null,
 			byteSize: stats.size,
-			lineCount,
-			averageLineLength: lineCount ? totalLineLength / lineCount : 0,
+			lineCount: 0,
+			averageLineLength: 0,
 			skipped: true,
 			skipReason: "unreadable",
 		};
-	} finally {
-		reader.close();
 	}
-
-	const averageLineLength = lineCount ? totalLineLength / lineCount : 0;
-	if (lineCount > 0 && averageLineLength > MINIFIED_AVG_LINE_LENGTH) {
-		return {
-			content: null,
-			byteSize: stats.size,
-			lineCount,
-			averageLineLength,
-			skipped: true,
-			skipReason: "minified",
-		};
-	}
-
-	return {
-		content: lines.join("\n"),
-		byteSize: stats.size,
-		lineCount,
-		averageLineLength,
-		skipped: false,
-	};
 }
 
 export function readFile(filePath: string): string {

@@ -10,11 +10,16 @@ export function getGitChurn(dir: string): Map<string, number> {
 			{ cwd: dir, encoding: "utf-8" },
 		);
 
-		const files = output.split("\n").filter((f) => f.trim().length > 0);
+		const files = output.split("\n");
 		for (const file of files) {
-			churnMap.set(file, (churnMap.get(file) || 0) + 1);
+			const trimmed = file.trim();
+			if (trimmed) {
+				churnMap.set(trimmed, (churnMap.get(trimmed) || 0) + 1);
+			}
 		}
-	} catch {}
+	} catch {
+		// Ignore git errors
+	}
 	return churnMap;
 }
 
@@ -114,7 +119,9 @@ export function getTemporalCoupling(
 				}
 			}
 		}
-	} catch {}
+	} catch {
+		// Ignore git errors
+	}
 
 	return couplings.sort((a, b) => b.couplingDegree - a.couplingDegree);
 }

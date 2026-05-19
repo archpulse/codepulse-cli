@@ -141,6 +141,35 @@ codepulse plugins list --json
 
 ---
 
+## 🤖 Podpora AI agentů (MCP)
+
+CodePulse obsahuje nativní server **Model Context Protocol (MCP)**, který umožňuje AI agentům (jako Claude, Cursor a další) provádět hlubokou architektonickou analýzu vašeho kódu.
+
+### Nastavení pro AI agenty
+
+```bash
+# Generování konfigurace MCP a pravidel pro agenty
+codepulse setup-mcp
+```
+
+Tento příkaz:
+1. Nakonfiguruje vaše MCP-kompatibilní AI IDE.
+2. Vygeneruje `.cursorrules`, `.clinerules` a `CODEX.md` v kořenovém adresáři projektu.
+3. Povolí „architektonickou inteligenci“ pro vašeho AI asistenta.
+
+### Dostupné nástroje agenta (17+ nástrojů)
+
+| Nástroj | Popis |
+|------|-------------|
+| `codepulse_identity` | Kontrola zdraví projektu a identifikace kritických souborů |
+| `get_file_context` | Architektonické dossier souboru (vazby, riziko, složitost) |
+| `predict_change_impact` | Předpověď dopadu změn na systém (blast radius) |
+| `find_similar_functions` | Hledání sémanticky podobné logiky přes AST |
+| `suggest_split_strategy` | Strategie dekompozice pro God Files |
+| `simulate_edit` | Validace změn před jejich aplikací |
+
+---
+
 ## 📚 Dokumentace
 
 - **📐 [Architektura a interní procesy](../docs/ARCHITECTURE.md)** — Pochopit, jak CodePulse pracuje pod kapotou
@@ -148,7 +177,27 @@ codepulse plugins list --json
 
 ---
 
-## 📸 Vizuální příklady
+## 🚀 Architektonický výkon
+
+CodePulse je **platforma architektonické inteligence**. Zatímco standardní lintery analyzují izolovanou syntaxi, CodePulse vypočítává systémový stav celé struktury vašeho projektu, jeho závislostí a evolučních rizik.
+
+### Efektivita výkonu: Systémová vs. tradiční analýza
+
+Tradiční statický linting (ESLint) používáme jako základ pro demonstraci efektivity našeho systémového analytického enginu.
+
+| Schopnost | Tradiční statický linting | CodePulse (Systémový) |
+|-----------|:-------------------------:|:---------------------:|
+| **Rozsah analýzy** | Na úrovni souboru | **Celoprojektový strukturální** |
+| **Model kontextu** | Izolovaný AST kontext | **Persistentní graf projektu** |
+| Styl analýzy | Orientovaný na pravidla | **Strukturální + vzory** |
+| **Průměrná doba běhu** | ~4.8s | **~2.8s** |
+| **Pracovní RAM** | ~103 MB | **~175 MB** |
+
+> **Poznámka**: ESLint je zde použit jako známý základ pro statickou analýzu orientovanou na soubory, nikoli jako přímé funkční srovnání.
+> **Benchmark**: Projekt s 27k LOC | průměr z 5 běhů | studené starty | Intel i3-1005G1 / 8GB RAM.
+> Kompletní metodika v [BENCHMARKS.md](../docs/BENCHMARKS.md).
+
+---
 
 <table>
   <tr>

@@ -108,6 +108,16 @@ function findRobust<T extends { name: string; filename?: string }>(
 	return found;
 }
 
+function resolvePrompt(promptNameOrFlag: string | undefined, allPrompts: PromptConfig[], config: AppConfig): PromptConfig | undefined {
+	if (promptNameOrFlag === "-D" || promptNameOrFlag === "--default") {
+		return allPrompts.find(p => p.name === config.defaultPromptName) || DEFAULT_PROMPTS.find(p => p.name === "default");
+	}
+	if (promptNameOrFlag) {
+		return findRobust(allPrompts, promptNameOrFlag);
+	}
+	return undefined;
+}
+
 export async function runAgentCommand(
 	agentNameOrCommand?: string,
 	promptNameOrFlag?: string,
@@ -115,13 +125,11 @@ export async function runAgentCommand(
 	const config = loadConfig();
 	const allPrompts = [...DEFAULT_PROMPTS, ...config.prompts];
 
-	// Handle 'codepulse agents config' or 'codepulse agent config'
 	if (agentNameOrCommand === "config") {
 		await runTuiConfig();
 		return;
 	}
 
-	// Handle 'codepulse agents prompt config'
 	if (agentNameOrCommand === "prompt" && promptNameOrFlag === "config") {
 		await runAddPrompt();
 		return;
@@ -136,56 +144,27 @@ export async function runAgentCommand(
 
 	const agent = findRobust(SUPPORTED_AGENTS, agentNameOrCommand);
 	if (!agent) {
-		console.error(
-			chalk.red(
-				`\n  ${SYMBOLS.error} ${t("agent.unknown_agent", { name: agentNameOrCommand })}`,
-			),
-		);
-		console.log(
-			chalk.gray(
-				`  Available agents: ${SUPPORTED_AGENTS.map((a) => a.name).join(", ")}\n`,
-			),
-		);
+		console.error(chalk.red(`\n  ${SYMBOLS.error} ${t("agent.unknown_agent", { name: agentNameOrCommand })}`));
+		console.log(chalk.gray(`  Available agents: ${SUPPORTED_AGENTS.map((a) => a.name).join(", ")}\n`));
 		return;
 	}
 
-	let selectedPrompt: PromptConfig | undefined;
-
-	if (promptNameOrFlag === "-D" || promptNameOrFlag === "--default") {
-		selectedPrompt = allPrompts.find(p => p.name === config.defaultPromptName) || DEFAULT_PROMPTS.find(p => p.name === "default");
-	} else if (promptNameOrFlag) {
-		selectedPrompt = findRobust(allPrompts, promptNameOrFlag);
-	}
+	const selectedPrompt = resolvePrompt(promptNameOrFlag, allPrompts, config);
 
 	if (!selectedPrompt) {
 		if (promptNameOrFlag) {
-			console.error(
-				chalk.red(
-					`\n  ${SYMBOLS.error} ${t("agent.unknown_prompt", { name: promptNameOrFlag })}`,
-				),
-			);
+			console.error(chalk.red(`\n  ${SYMBOLS.error} ${t("agent.unknown_prompt", { name: promptNameOrFlag })}`));
 		}
-		console.log(
-			chalk.gray(
-				`  Available prompts: ${allPrompts.map((p) => p.name).join(", ")}\n`,
-			),
-		);
+		console.log(chalk.gray(`  Available prompts: ${allPrompts.map((p) => p.name).join(", ")}\n`));
 		return;
 	}
 
-	const baseDir = process.cwd();
-	const filePath = path.join(baseDir, agent.filename);
+	const filePath = path.join(process.cwd(), agent.filename);
 	const parentDir = path.dirname(filePath);
-	if (!fs.existsSync(parentDir)) {
-		fs.mkdirSync(parentDir, { recursive: true });
-	}
+	if (!fs.existsSync(parentDir)) fs.mkdirSync(parentDir, { recursive: true });
 
 	fs.writeFileSync(filePath, selectedPrompt.content, "utf-8");
-	console.log(
-		chalk.green(
-			`\n  ${SYMBOLS.check} ${t("agent.success", { file: agent.filename, agent: agent.name, location: t("agent.location.cwd"), prompt: selectedPrompt.name })}\n`,
-		),
-	);
+	console.log(chalk.green(`\n  ${SYMBOLS.check} ${t("agent.success", { file: agent.filename, agent: agent.name, location: t("agent.location.cwd"), prompt: selectedPrompt.name })}\n`));
 }
 
 export async function runAddPrompt() {
@@ -223,6 +202,86 @@ export async function runAddPrompt() {
 	console.log(
 		chalk.green(`\n  ${SYMBOLS.check} ${t("agent.success_save", { name: name.trim() })}\n`),
 	);
+}
+
+async function handlePromptAction(action: string, prompt: any, config: any, isBuiltIn: boolean) {
+	if (action === "set_default") {
+		config.defaultPromptName = prompt.name;
+		saveConfig(config);
+		console.log(chalk.green(`\n  ${SYMBOLS.check} '${prompt.name}' set as default!`));
+		await new Promise(r => setTimeout(r, 1000));
+	} else if (action === "edit") {
+		await handleEditPrompt(prompt, config, isBuiltIn);
+	} else if (action === "delete" && !isBuiltIn) {
+		await handleDeletePrompt(prompt, config);
+	} else if (action === "apply") {
+		await handleApplyToAgent(prompt);
+	}
+}
+
+async function handleEditPrompt(prompt: any, config: any, isBuiltIn: boolean) {
+	const { content } = await inquirer.prompt([
+		{
+			type: "editor",
+			name: "content",
+			message: "Edit prompt content:",
+			default: prompt.content,
+		},
+	]);
+
+	if (isBuiltIn) {
+		const newName = `${prompt.name}_custom`;
+		config.prompts.push({ name: newName, content });
+		console.log(chalk.green(`\n  ${SYMBOLS.check} Built-in prompt edited and saved as '${newName}'`));
+	} else {
+		const idx = config.prompts.findIndex((p: any) => p.name === prompt.name);
+		if (idx !== -1) {
+			config.prompts[idx].content = content;
+			console.log(chalk.green(`\n  ${SYMBOLS.check} Prompt '${prompt.name}' updated!`));
+		}
+	}
+	saveConfig(config);
+	await new Promise(r => setTimeout(r, 1000));
+}
+
+async function handleDeletePrompt(prompt: any, config: any) {
+	const { confirm } = await inquirer.prompt([
+		{ type: "confirm", name: "confirm", message: `Are you sure you want to delete '${prompt.name}'?` }
+	]);
+	if (confirm) {
+		config.prompts = config.prompts.filter((p: any) => p.name !== prompt.name);
+		if (config.defaultPromptName === prompt.name) {
+			config.defaultPromptName = "default";
+		}
+		saveConfig(config);
+		console.log(chalk.green(`\n  ${SYMBOLS.check} Prompt '${prompt.name}' deleted.`));
+		await new Promise(r => setTimeout(r, 1000));
+	}
+}
+
+async function handleApplyToAgent(prompt: any) {
+	const { selectedAgentId } = await inquirer.prompt([
+		{
+			type: "list",
+			name: "selectedAgentId",
+			message: "Apply to which agent?",
+			choices: SUPPORTED_AGENTS.map((a) => ({
+				name: `${a.name} ${chalk.gray(`(${a.filename})`)}`,
+				value: a.filename,
+			})),
+		}
+	]);
+
+	const agent = SUPPORTED_AGENTS.find(a => a.filename === selectedAgentId);
+	if (agent) {
+		const filePath = path.join(process.cwd(), agent.filename);
+		const parentDir = path.dirname(filePath);
+		if (!fs.existsSync(parentDir)) fs.mkdirSync(parentDir, { recursive: true });
+		fs.writeFileSync(filePath, prompt.content, "utf-8");
+		console.log(chalk.green(`\n  ${SYMBOLS.check} Configured ${agent.name} with '${prompt.name}'!`));
+		console.log(chalk.gray(`    File: ${filePath}`));
+		await new Promise(r => setTimeout(r, 2000));
+	}
 }
 
 export async function runTuiConfig() {
@@ -277,78 +336,6 @@ export async function runTuiConfig() {
 		]);
 
 		if (action === "back") continue;
-
-		if (action === "set_default") {
-			config.defaultPromptName = prompt.name;
-			saveConfig(config);
-			console.log(chalk.green(`\n  ${SYMBOLS.check} '${prompt.name}' set as default!`));
-			await new Promise(r => setTimeout(r, 1000));
-		}
-
-		if (action === "edit") {
-			const { content } = await inquirer.prompt([
-				{
-					type: "editor",
-					name: "content",
-					message: "Edit prompt content:",
-					default: prompt.content,
-				},
-			]);
-
-			if (isBuiltIn) {
-				const newName = `${prompt.name}_custom`;
-				config.prompts.push({ name: newName, content });
-				saveConfig(config);
-				console.log(chalk.green(`\n  ${SYMBOLS.check} Built-in prompt edited and saved as '${newName}'`));
-			} else {
-				const idx = config.prompts.findIndex(p => p.name === prompt.name);
-				if (idx !== -1) {
-					config.prompts[idx].content = content;
-					saveConfig(config);
-					console.log(chalk.green(`\n  ${SYMBOLS.check} Prompt '${prompt.name}' updated!`));
-				}
-			}
-			await new Promise(r => setTimeout(r, 1000));
-		}
-
-		if (action === "delete" && !isBuiltIn) {
-			const { confirm } = await inquirer.prompt([
-				{ type: "confirm", name: "confirm", message: `Are you sure you want to delete '${prompt.name}'?` }
-			]);
-			if (confirm) {
-				config.prompts = config.prompts.filter(p => p.name !== prompt.name);
-				if (config.defaultPromptName === prompt.name) {
-					config.defaultPromptName = "default";
-				}
-				saveConfig(config);
-				console.log(chalk.green(`\n  ${SYMBOLS.check} Prompt '${prompt.name}' deleted.`));
-				await new Promise(r => setTimeout(r, 1000));
-			}
-		}
-
-		if (action === "apply") {
-			const { selectedAgentId } = await inquirer.prompt([
-				{
-					type: "list",
-					name: "selectedAgentId",
-					message: "Apply to which agent?",
-					choices: SUPPORTED_AGENTS.map((a) => ({
-						name: `${a.name} ${chalk.gray(`(${a.filename})`)}`,
-						value: a.filename,
-					})),
-				}
-			]);
-
-			const agent = SUPPORTED_AGENTS.find(a => a.filename === selectedAgentId);
-			if (agent) {
-				const filePath = path.join(process.cwd(), agent.filename);
-				const parentDir = path.dirname(filePath);
-				if (!fs.existsSync(parentDir)) fs.mkdirSync(parentDir, { recursive: true });
-				fs.writeFileSync(filePath, prompt.content, "utf-8");
-				console.log(chalk.green(`\n  ${SYMBOLS.check} Configured ${agent.name} with '${prompt.name}'!`));
-				console.log(chalk.gray(`    File: ${filePath}`));
-				await new Promise(r => setTimeout(r, 2000));
-			}
-		}
+		await handlePromptAction(action, prompt, config, isBuiltIn);
 	}
 }

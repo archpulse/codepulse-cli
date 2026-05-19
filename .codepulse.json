@@ -1,0 +1,7 @@
+{
+  "exclude": ["benchmark", "dist", "node_modules", "extensions"],
+  "rootDir": "src",
+  "godFileLines": 500,
+  "godFileImports": 20,
+  "criticalNodeThreshold": 15
+}

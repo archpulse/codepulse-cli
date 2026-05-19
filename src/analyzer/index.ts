@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { isMainThread, parentPort, workerData } from "node:worker_threads";
 import { runRules } from "../rules";
 import type {
@@ -5,7 +7,7 @@ import type {
 	AnalysisResult,
 	FileNode,
 } from "../types/analysis";
-import type { ScanOptions } from "../types/config";
+import type { ProjectConfig, ScanOptions } from "../types/config";
 import { loadPlugins } from "../utils/plugins";
 import {
 	calculateHotspots,
@@ -18,7 +20,7 @@ import {
 	saveAnalysisCache,
 } from "./cache";
 import { buildGraph, detectDeadExports } from "./graph";
-import { scanFiles } from "./scanner";
+import { scanFilesAsync } from "./scanner";
 import { runFastLinterChecks } from "../rules/fastLinter";
 import { runSecurityChecks } from "../rules/security";
 import {
@@ -54,39 +56,53 @@ export async function analyze(
 	options: {
 		pro?: boolean;
 		strict?: boolean;
+		precision?: boolean | "auto";
 		silent?: boolean;
 		cache?: AnalysisCache;
 	} = {},
 ): Promise<AnalysisResult> {
-	const config = loadConfig(dir, options);
+	const absDir = path.resolve(dir);
+	const config = loadConfig(absDir, options);
 	const silent = options.silent || false;
-	const cache = await initializeCache(dir, options.cache);
+	const cache = await initializeCache(absDir, options.cache);
 
-	const scanOptions = getScanOptions(dir, config);
-	const filePaths = scanFiles(scanOptions);
+	const scanOptions = getScanOptions(absDir, config);
+	const filePaths = await scanFilesAsync(scanOptions);
 	pruneAnalysisCache(cache, filePaths);
 
-	const fastLinterPromise = runFastLinterChecks(
-		createFastLinterContext(filePaths, dir, config),
-	);
-	const securityPromise = runSecurityChecks(
-		createSecurityContext(filePaths, dir, config),
-	);
+	// Resolve auto precision
+	const resolvedPrecision = config.precision === "auto"
+		? (detectEslintConfig(absDir) && isJsTsProject(filePaths))
+		: !!config.precision;
 
-	const churnMap = await getChurnMap(dir, cache);
+	config.precision = resolvedPrecision;
+
+	// Memory optimization: run expensive tasks sequentially to reduce peak RSS
+	const churnMap = await getChurnMap(absDir, cache);
+	
 	const files = await runFileAnalysis(
 		filePaths,
-		dir,
+		absDir,
 		churnMap,
 		config,
 		silent,
 		cache,
 	);
+	
+	const unparsedFiles = filePaths.filter(p => !files.some(f => f.path === p));
 
-	const { edges, graph, circularDependencies } = buildGraph(files, dir);
+	const fastLinterIssues = await runFastLinterChecks(
+		createFastLinterContext(filePaths, absDir, config),
+	).catch(() => []);
+
+	const securityIssues = await runSecurityChecks(
+		createSecurityContext(filePaths, absDir, config),
+	).catch(() => []);
+
+	const { edges, graph, circularDependencies } = buildGraph(files, absDir);
 	const deadExports = detectDeadExports(files, edges);
 	const hotspots = calculateHotspots(files);
-	const temporalCouplings = options.pro ? getTemporalCoupling(dir) : undefined;
+	const temporalCouplings = options.pro ? getTemporalCoupling(absDir) : undefined;
 
 	updateCriticalNodes(graph, config.criticalNodeThreshold || 10);
 
@@ -101,17 +117,12 @@ export async function analyze(
 
 	const externalRules = await loadPlugins();
 	const issues = runRules(
-		{ files, graph, edges, config },
+		{ files, graph, edges, config, circularDependencies },
 		{ strict: options.strict },
 		externalRules,
 	);
 
-	const [linterIssues, securityIssues] = await Promise.all([
-		fastLinterPromise.catch(() => []),
-		securityPromise.catch(() => []),
-	]);
-
-	issues.push(...linterIssues, ...securityIssues);
+	issues.push(...fastLinterIssues, ...securityIssues);
 	await saveAnalysisCache(dir, cache).catch(() => {});
 
 	return {
@@ -128,6 +139,8 @@ export async function analyze(
 		totalLines,
 		avgComplexity,
 		issues,
+		resolvedPrecision,
+		unparsedFiles,
 	};
 }
 
@@ -150,7 +163,7 @@ async function initializeCache(
 	return providedCache;
 }
 
-function getScanOptions(dir: string, config: any): ScanOptions {
+function getScanOptions(dir: string, config: ProjectConfig): ScanOptions {
 	return {
 		dir,
 		extensions: [
@@ -201,7 +214,7 @@ async function runFileAnalysis(
 	filePaths: string[],
 	dir: string,
 	churnMap: Map<string, number>,
-	config: any,
+	config: ProjectConfig,
 	silent: boolean,
 	cache: AnalysisCache,
 ): Promise<FileNode[]> {
@@ -230,6 +243,42 @@ async function runFileAnalysis(
 
 function updateCriticalNodes(graph: Map<string, any>, threshold: number) {
 	for (const node of graph.values()) {
-		node.isCritical = node.inDegree >= threshold;
+		const isTypeFile = node.id.includes("/types/") || node.id.endsWith(".d.ts");
+		node.isCritical = !isTypeFile && (node.inDegree >= threshold);
 	}
+}
+
+function detectEslintConfig(dir: string): boolean {
+	const configFiles = [
+		".eslintrc.js",
+		".eslintrc.cjs",
+		".eslintrc.mjs",
+		".eslintrc.yaml",
+		".eslintrc.yml",
+		".eslintrc.json",
+		".eslintrc",
+		"eslint.config.js",
+		"eslint.config.mjs",
+		"eslint.config.cjs",
+	];
+
+	if (configFiles.some((f) => fs.existsSync(path.join(dir, f)))) {
+		return true;
+	}
+
+	const pkgPath = path.join(dir, "package.json");
+	if (fs.existsSync(pkgPath)) {
+		try {
+			const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+			if (pkg.eslintConfig) return true;
+		} catch {
+			// Ignore parse errors
+		}
+	}
+
+	return false;
+}
+
+function isJsTsProject(filePaths: string[]): boolean {
+	return filePaths.some((p) => /\.(js|ts|jsx|tsx|mjs|cjs)$/i.test(p));
 }

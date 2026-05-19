@@ -1,3 +1,38 @@
+# CHANGELOG — CodePulse v5.0.0 "Engineering Honesty"
+
+## ⚖️ Brutally Honest Health Scoring (Breaking Change)
+*   **Non-Linear Normalization:** Replaced linear KLOC scaling with a `sqrt(KLOC)` hybrid model. Small issues no longer vanish in large projects.
+*   **Deterministic God Files:** Defined strict thresholds for God Files (1000+ LOC or 30+ imports) with mandatory scoring caps.
+*   **Severity-Weighted Risks:** Security vulnerabilities and dependency flaws are now weighted by severity. Critical RCEs now trigger an immediate "Unhealthy" (39/59) cap.
+*   **Absolute Debt:** Reinstated absolute penalties for Dead Exports and Hotspots. Garbage is garbage, regardless of project size.
+
+## 🛡️ The Confidence Metric
+*   **Humble Analysis:** Introduced a separate "Confidence Score" (Max 98%) to quantify analysis reliability based on file coverage and parsing success.
+*   **Unknown Tracking:** Explicit penalties for unparsed files or high-complexity "blind spots" where static analysis is less reliable.
+*   **Asymptotic Ceiling:** 100% confidence is now correctly treated as an engineering impossibility.
+
+## 🤖 Advanced AI-Agent Intelligence (MCP v2)
+*   **Massive Toolset Expansion:** Expanded from 4 to 17+ specialized tools for AI agents (Claude, Cursor, etc.).
+*   **Predictive Analysis:** New `predict_change_impact` and `get_blast_radius` tools for transitive dependency risk assessment.
+*   **Structural Similarities:** `find_similar_functions` uses AST fingerprinting to find duplicated logic across the entire project.
+*   **Contextual Memory:** `store_memory` and `get_memories` allow agents to persist architectural facts across sessions.
+*   **Refactoring Assistance:** `suggest_split_strategy` provides domain-driven decomposition advice for God Files.
+*   **Pre-flight Validation:** `simulate_edit` validates proposed changes for syntax and architectural impact before they are applied.
+
+## 🚀 Performance & Internals
+*   **Worker Thread Pipeline:** File analysis is now offloaded to worker threads, significantly improving performance on multi-core systems.
+*   **Auto-Engine Selection:** Intelligent detection of project structure to automatically switch between **Oxlint** (ultra-fast) and **ESLint** (high-precision) engines.
+*   **Refactored Handler Architecture:** MCP handlers are now modularized for better maintainability and extensibility.
+
+## 🔌 Enhanced Plugin Discovery
+*   **Local Project Plugins:** CLI now automatically discovers and loads plugins from the `./plugins/` directory.
+*   **TS/JS Support:** Full support for custom quality rules written in TypeScript or JavaScript.
+
+## 📊 Triple-Panel Badges
+*   **Nuanced Visualization:** Badges now show both Health and Confidence panels.
+*   **Contextual Colors:** Confidence panels use a separate color scale (Blue/Amber/Red) to signal assessment depth.
+
+---
 # CHANGELOG — CodePulse v4.2.0 "Parallel Pulse"
 
 ## 🚀 Parallel Analysis Pipeline

@@ -46,13 +46,9 @@ export class CircularDependencyRule implements Rule {
 
 	run(context: AnalysisContext): Issue[] {
 		const issues: Issue[] = [];
-		const { edges } = context;
+		const { circularDependencies } = context;
 
-		// Re-run cycle detection on the current context edges
-		const { findCycles } = require("../analyzer/graph");
-		const cycles = findCycles(edges);
-
-		for (const cycle of cycles) {
+		for (const cycle of circularDependencies) {
 			const relCycle = cycle.map((p: string) => path.basename(p));
 			issues.push({
 				type: "circular-dependency",
@@ -106,11 +102,12 @@ export class CriticalNodeRule implements Rule {
 
 	run(context: AnalysisContext): Issue[] {
 		const issues: Issue[] = [];
+		const fileMap = new Map(context.files.map(f => [f.path, f]));
 
 		for (const [filePath, node] of context.graph) {
 			if (!node.isCritical) continue;
 
-			const file = context.files.find((f) => f.path === filePath);
+			const file = fileMap.get(filePath);
 			const rel = file?.relativePath ?? path.basename(filePath);
 
 			issues.push({
@@ -287,7 +284,9 @@ export class SCARule implements Rule {
 						});
 					}
 				}
-			} catch {}
+			} catch {
+			// Ignore rule execution errors
+		}
 		}
 
 		return issues;
@@ -332,7 +331,9 @@ export function runRules(
 	for (const rule of rules) {
 		try {
 			issues = issues.concat(rule.run(context));
-		} catch {}
+		} catch {
+			// Ignore rule execution errors
+		}
 	}
 
 	return issues;

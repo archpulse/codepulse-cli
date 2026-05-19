@@ -141,6 +141,35 @@ codepulse plugins list --json
 
 ---
 
+## 🤖 AI 에이전트 지원 (MCP)
+
+CodePulse는 네이티브 **Model Context Protocol (MCP)** 서버를 포함하고 있어 AI 에이전트(Claude, Cursor 등)가 코드베이스에 대한 심층적인 아키텍처 분석을 수행할 수 있도록 합니다.
+
+### AI 에이전트 설정
+
+```bash
+# MCP 설정 및 에이전트 규칙 생성
+codepulse setup-mcp
+```
+
+이 명령어는 다음을 수행합니다:
+1. MCP 호환 AI IDE를 구성합니다.
+2. 프로젝트 루트에 `.cursorrules`, `.clinerules`, `CODEX.md`를 생성합니다.
+3. AI 비서를 위한 "아키텍처 인텔리전스"를 활성화합니다.
+
+### 사용 가능한 에이전트 도구 (17개 이상의 도구)
+
+| 도구 | 설명 |
+|------|-------------|
+| `codepulse_identity` | 프로젝트 건강 상태 점검 및 중요 파일 식별 |
+| `get_file_context` | 파일 아키텍처 도시에 (연결, 리스크, 복잡성) |
+| `predict_change_impact` | 변경 영향 범위 예측 (blast radius) |
+| `find_similar_functions` | AST를 통한 구조적 유사성 검색 |
+| `suggest_split_strategy` | God Files에 대한 분할 전략 제안 |
+| `simulate_edit` | 적용 전 변경 사항 검증 |
+
+---
+
 ## 📚 문서
 
 - **📐 [아키텍처 및 내부 워크플로우](../docs/ARCHITECTURE.md)** — CodePulse의 내부 작동 방식 이해
@@ -148,7 +177,28 @@ codepulse plugins list --json
 
 ---
 
-## 📸 시각적 예제
+## 🚀 아키텍처 성능
+
+CodePulse는 **아키텍처 인텔리전스 플랫폼**입니다. 표준 린터가 격리된 구문을 분석하는 동안, CodePulse는 전체 프로젝트 구조, 종속성 및 진화적 리스크의 시스템적 상태를 계산합니다.
+
+### 성능 효율성: 시스템 분석 vs 기존 린팅
+
+기존의 정적 린팅(ESLint)을 벤치마크로 사용하여 시스템 분석 엔진의 효율성을 입증합니다.
+
+| 기능 | 기존 정적 린팅 | CodePulse (시스템적) |
+|------|:--------------:|:--------------------:|
+| **분석 범위** | 파일 단위 | **전체 프로젝트 구조적** |
+| **컨텍스트 모델** | 격리된 AST 컨텍스트 | **지속성 프로젝트 그래프** |
+| 분석 스타일 | 규칙 지향 | **구조적 + 패턴 인식** |
+| **평균 실행 시간** | ~4.8s | **~2.8s** |
+| **작업 RAM** | ~103 MB | **~175 MB** |
+
+> **참고**: ESLint는 기능적으로 직접적인 비교 대상이 아니라, 익숙한 파일 기반 정적 분석의 기준점(baseline)으로 사용되었습니다.
+> **벤치마크**: 27k LOC 프로젝트 | 5회 평균 | 콜드 런 | Intel i3-1005G1 / 8GB RAM.
+> 전체 방법론은 [BENCHMARKS.md](../docs/BENCHMARKS.md)를 참조하세요.
+
+---
+
 
 <table>
   <tr>

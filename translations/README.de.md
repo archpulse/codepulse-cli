@@ -141,6 +141,35 @@ codepulse plugins list --json
 
 ---
 
+## 🤖 KI-Agenten-Unterstützung (MCP)
+
+CodePulse enthält einen nativen **Model Context Protocol (MCP)** Server, der es KI-Agenten (wie Claude, Cursor und anderen) ermöglicht, eine tiefe architektonische Analyse Ihres Codes durchzuführen.
+
+### Setup für KI-Agenten
+
+```bash
+# MCP-Konfiguration und Agenten-Regeln generieren
+codepulse setup-mcp
+```
+
+Dieser Befehl wird:
+1. Ihr MCP-kompatibles KI-IDE konfigurieren.
+2. `.cursorrules`, `.clinerules` und `CODEX.md` in Ihrem Projekt-Root generieren.
+3. "Architektonische Intelligenz" für Ihren KI-Assistenten aktivieren.
+
+### Verfügbare Agenten-Tools (17+ Tools)
+
+| Tool | Beschreibung |
+|------|-------------|
+| `codepulse_identity` | Projekt-Gesundheitscheck und Identifizierung kritischer Dateien |
+| `get_file_context` | Architektonisches Dossier der Datei (Beziehungen, Risiko, Komplexität) |
+| `predict_change_impact` | Vorhersage der Auswirkungen von Änderungen (Blast Radius) |
+| `find_similar_functions` | Suche nach semantisch ähnlicher Logik via AST |
+| `suggest_split_strategy` | Dekompositionsstrategie für God Files |
+| `simulate_edit` | Validierung von Änderungen vor der Anwendung |
+
+---
+
 ## 📚 Dokumentation
 
 - **📐 [Architektur und interne Workflows](../docs/ARCHITECTURE.md)** — Verstehen Sie, wie CodePulse unter der Haube funktioniert
@@ -148,7 +177,28 @@ codepulse plugins list --json
 
 ---
 
-## 📸 Visuelle Beispiele
+## 🚀 Architektonische Performance
+
+CodePulse ist eine **Plattform für architektonische Intelligenz**. Während Standard-Linter isolierte Syntax analysieren, berechnet CodePulse den systemischen Zustand Ihrer gesamten Projektstruktur, Abhängigkeiten und evolutionären Risiken.
+
+### Performance-Effizienz: Systemische vs. traditionelle Analyse
+
+Wir verwenden traditionelles statisches Linting (ESLint) als Benchmark, um die Effizienz unserer systemischen Analyse-Engine zu demonstrieren.
+
+| Fähigkeit | Traditionelles statisches Linting | CodePulse (Systemisch) |
+|-----------|:---------------------------------:|:----------------------:|
+| **Analysemethode** | Datei-basiert | **Gesamtprojekt-Strukturell** |
+| **Kontextmodell** | Isolierter AST-Kontext | **Persistenter Projektgraph** |
+| Analysestil | Regelorientiert | **Strukturell + Pattern-aware** |
+| **Durchschnittliche Laufzeit**| ~4.8s | **~2.8s** |
+| **Arbeits-RAM** | ~103 MB | **~175 MB** |
+
+> **Hinweis**: ESLint wird hier als bekannte dateiorientierte statische Analyse-Basis verwendet, nicht als direkter funktionsgleicher Vergleich.
+> **Benchmark**: 27k LOC Projekt | Durchschnitt aus 5 Durchläufen | Kaltstarts | Intel i3-1005G1 / 8GB RAM.
+> Vollständige Methodik in [BENCHMARKS.md](../docs/BENCHMARKS.md).
+
+
+---
 
 <table>
   <tr>

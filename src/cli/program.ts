@@ -22,7 +22,7 @@ import {
 } from "../commands";
 import { setupMcpConfigs } from "../mcp-setup";
 import { generateReport } from "../reporter/html";
-import { calculateHealthScore } from "../reporter/stats";
+import { calculateHealthScore, calculateConfidenceScore } from "../reporter/stats";
 import { t } from "../utils/i18n";
 import { listPlugins } from "../utils/plugins";
 import { SYMBOLS } from "../utils/terminal";
@@ -218,6 +218,9 @@ function registerAnalysisCommands(program: Command) {
 			"--fail-on <level>",
 			"Exit with code 1 if issues of this severity exist",
 		)
+		.option("--precision", "Enable extended analysis mode (uses ESLint for JS/TS)")
+		.option("--eslint", "Alias for --precision")
+		.option("--engine <type>", "Select linter engine (oxlint|eslint|auto)", "auto")
 		.option("--group-by <field>", "Group output by field (file|type|severity)")
 		.option("--strict", "Strict mode: treat warnings as errors, lower thresholds")
 		.action(runScan);
@@ -327,10 +330,11 @@ function registerReportCommands(program: Command) {
 					avgComplexity: result.avgComplexity,
 				};
 				const score = calculateHealthScore(healthStats, result);
+				const confidence = calculateConfidenceScore(result);
 				const badgeSvg = generateBadge(result, score);
 				const badgePath = saveBadge(badgeSvg, absDir);
 				console.log(chalk.green(`\n  ✓ Badge generated: ${badgePath}`));
-				console.log(chalk.gray(`    Score: ${score}/100\n`));
+				console.log(chalk.gray(`    Health: ${score}/100 | Confidence: ${confidence}%\n`));
 			} catch (err) {
 				console.error(chalk.red("Failed to generate badge"), err);
 			}

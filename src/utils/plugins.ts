@@ -14,7 +14,7 @@ export interface PluginInfo {
 	rule: Rule;
 }
 
-function getPluginsDir(): string {
+function getGlobalPluginsDir(): string {
 	const home = os.homedir();
 	let baseDir: string;
 
@@ -26,33 +26,42 @@ function getPluginsDir(): string {
 		baseDir = path.join(home, ".config");
 	}
 
-	const pluginsDir = path.join(baseDir, "codepulse", "plugins");
-	if (!fs.existsSync(pluginsDir)) {
-		fs.mkdirSync(pluginsDir, { recursive: true });
-	}
-	return pluginsDir;
+	return path.join(baseDir, "codepulse", "plugins");
+}
+
+function getLocalPluginsDir(): string {
+	return path.join(process.cwd(), "plugins");
 }
 
 async function forEachPlugin(
 	callback: (ruleInstance: Rule, entryName: string) => void,
 ) {
-	const pluginsDir = getPluginsDir();
-	const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
+	const searchDirs = [getGlobalPluginsDir(), getLocalPluginsDir()];
 
-	for (const entry of entries) {
-		if (entry.isFile() && entry.name.endsWith(".js")) {
-			try {
-				const pluginPath = path.join(pluginsDir, entry.name);
-				const plugin = require(pluginPath);
+	for (const pluginsDir of searchDirs) {
+		if (!fs.existsSync(pluginsDir)) continue;
+		
+		const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 
-				if (plugin?.default && typeof plugin.default === "function") {
-					const ruleInstance = new plugin.default();
-					if (ruleInstance.name && typeof ruleInstance.run === "function") {
-						callback(ruleInstance, entry.name);
+		for (const entry of entries) {
+			if (entry.isFile() && (entry.name.endsWith(".js") || entry.name.endsWith(".ts"))) {
+				try {
+					const pluginPath = path.resolve(path.join(pluginsDir, entry.name));
+					
+					// Use require for CommonJS. 
+					// For .ts files to work, the environment must have ts-node registered.
+					const module = require(pluginPath);
+					const PluginClass = module.default || module;
+
+					if (typeof PluginClass === "function") {
+						const ruleInstance = new PluginClass();
+						if (ruleInstance.name && typeof ruleInstance.run === "function") {
+							callback(ruleInstance, entry.name);
+						}
 					}
+				} catch (err) {
+					// console.error(`Failed to load plugin ${entry.name}:`, err);
 				}
-			} catch {
-				// Silently skip or log depending on context
 			}
 		}
 	}

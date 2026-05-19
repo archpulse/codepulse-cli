@@ -31,6 +31,7 @@ describe("FastLinterRule Integration", () => {
 		graph: new Map(),
 		edges: [],
 		config: { rootDir: "/tmp/project" },
+		circularDependencies: [],
 	};
 
 	it("should parse Revive (Go) output correctly", () => {

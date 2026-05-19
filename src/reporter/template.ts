@@ -72,7 +72,7 @@ function sectionIcon(type: keyof typeof TOOLTIPS, color: string): string {
     </span>`;
 }
 
-function renderComplexityRows(stats: any): string {
+function renderComplexityRows(stats: Record<string, any>): string {
 	return stats.top10Complex
 		.map((f: any) => {
 			const level =
@@ -92,7 +92,7 @@ function renderComplexityRows(stats: any): string {
 		.join("\n");
 }
 
-function renderVulnerabilityRows(stats: any): string {
+function renderVulnerabilityRows(stats: Record<string, any>): string {
 	return stats.vulnerabilitiesList
 		.map(
 			(v: any) =>
@@ -115,7 +115,7 @@ function renderDeadRows(result: AnalysisResult): string {
 		.join("\n");
 }
 
-function renderGodRows(stats: any): string {
+function renderGodRows(stats: Record<string, any>): string {
 	return stats.godFilesList
 		.map(
 			(f: any) =>
@@ -139,7 +139,7 @@ function renderCriticalRows(result: AnalysisResult): string {
 		.join("\n");
 }
 
-function renderHotspotRows(stats: any): string {
+function renderHotspotRows(stats: Record<string, any>): string {
 	return stats.hotspots
 		.map(
 			(h: any) => `
@@ -153,7 +153,7 @@ function renderHotspotRows(stats: any): string {
 		.join("");
 }
 
-export function buildHtml(result: AnalysisResult, stats: any): string {
+export function buildHtml(result: AnalysisResult, stats: Record<string, any>): string {
 	const complexityRows = renderComplexityRows(stats);
 	const vulnerabilityRows = renderVulnerabilityRows(stats);
 	const deadRows = renderDeadRows(result);
@@ -319,7 +319,7 @@ function getHotspotColor(count: number): string {
 	return "var(--green)";
 }
 
-function renderSummaryCards(stats: any, result: any): string {
+function renderSummaryCards(stats: Record<string, any>, result: any): string {
 	const healthScore = calculateHealthScore(stats, result);
 	const compColor = getComplexityColor(stats.avgComplexity);
 	const vulnColor = getVulnerabilityColor(stats.vulnerabilities);

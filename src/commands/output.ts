@@ -3,97 +3,60 @@ import chalk from "chalk";
 import type { AnalysisResult } from "../types/analysis";
 import { SYMBOLS } from "../utils/terminal";
 
+function printIssueStatus(label: string, count: number, type: "error" | "warn" | "info" | "success" | "fire") {
+	let symbol = SYMBOLS.check;
+	let color = chalk.green;
+	let valueStr = "none";
+
+	if (count > 0) {
+		valueStr = count.toString();
+		if (type === "error") {
+			symbol = SYMBOLS.cross;
+			color = chalk.red;
+		} else if (type === "warn") {
+			symbol = SYMBOLS.warn;
+			color = chalk.yellow;
+		} else if (type === "info") {
+			symbol = SYMBOLS.info;
+			color = chalk.blue;
+		} else if (type === "fire") {
+			symbol = SYMBOLS.fire;
+			color = chalk.magenta;
+		}
+	}
+
+	const padding = " ".repeat(Math.max(0, 15 - label.length));
+	console.log(`  ${color(symbol)} ${label}:${padding}${color(valueStr)}`);
+}
+
 export function printStats(result: AnalysisResult, dir: string): void {
 	console.log(`\n${chalk.bold.cyan(SYMBOLS.line.repeat(52))}`);
-	console.log(
-		chalk.bold.white("  CodePulse") +
-			chalk.bold.cyan(" CLI") +
-			chalk.gray(" — Project Stats"),
-	);
+	console.log(chalk.bold.white("  CodePulse") + chalk.bold.cyan(" CLI") + chalk.gray(" — Project Stats"));
 	console.log(chalk.bold.cyan(SYMBOLS.line.repeat(52)));
 
-	console.log(
-		`\n  ${chalk.gray("Directory:")}    ${chalk.white(path.resolve(dir))}`,
-	);
-	console.log(
-		`  ${chalk.gray("Files:")}        ${chalk.white(result.totalFiles)}`,
-	);
-	console.log(
-		`  ${chalk.gray("Lines:")}        ${chalk.white(result.totalLines.toLocaleString())}`,
-	);
-	console.log(
-		`  ${chalk.gray("Avg Complexity:")} ${complexityColor(result.avgComplexity)}`,
-	);
-	console.log(
-		`  ${chalk.gray("Dependencies:")} ${chalk.white(`${result.edges.length} edges`)}`,
-	);
+	console.log(`\n  ${chalk.gray("Directory:")}    ${chalk.white(path.resolve(dir))}`);
+	console.log(`  ${chalk.gray("Files:")}        ${chalk.white(result.totalFiles)}`);
+	console.log(`  ${chalk.gray("Lines:")}        ${chalk.white(result.totalLines.toLocaleString())}`);
+	console.log(`  ${chalk.gray("Avg Complexity:")} ${complexityColor(result.avgComplexity)}`);
+	console.log(`  ${chalk.gray("Dependencies:")} ${chalk.white(`${result.edges.length} edges`)}`);
 
 	console.log(`\n${chalk.bold.yellow("  Issues Found")}`);
 	console.log(`  ${chalk.gray(SYMBOLS.thinLine.repeat(30))}`);
 
-	if (result.deadExports.length > 0) {
-		console.log(
-			`  ${chalk.red(SYMBOLS.cross)} Dead exports:    ${chalk.red(result.deadExports.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} Dead exports:    ${chalk.green("none")}`,
-		);
-	}
+	printIssueStatus("Dead exports", result.deadExports.length, "error");
+	printIssueStatus("God files", result.godFiles.length, "warn");
+	printIssueStatus("Critical nodes", result.criticalFiles.length, "error");
+	printIssueStatus("Hotspots", result.hotspots.length, "fire");
 
-	if (result.godFiles.length > 0) {
-		console.log(
-			`  ${chalk.yellow(SYMBOLS.warn)} God files:       ${chalk.yellow(result.godFiles.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} God files:       ${chalk.green("none")}`,
-		);
-	}
-
-	if (result.criticalFiles.length > 0) {
-		console.log(
-			`  ${chalk.red("!")} Critical nodes:  ${chalk.red(result.criticalFiles.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} Critical nodes:  ${chalk.green("none")}`,
-		);
-	}
-
-	if (result.hotspots.length > 0) {
-		console.log(
-			`  ${chalk.magenta(SYMBOLS.fire)} Hotspots:        ${chalk.magenta(result.hotspots.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} Hotspots:        ${chalk.green("none")}`,
-		);
-	}
-
-	const vulnerabilities = result.issues.filter(
-		(i) => i.type === "vulnerability",
-	);
-	if (vulnerabilities.length > 0) {
-		console.log(
-			`  ${chalk.red(SYMBOLS.radio)} Vulnerabilities: ${chalk.red.bold(vulnerabilities.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} Vulnerabilities: ${chalk.green("none")}`,
-		);
-	}
-
-	const linterIssues = result.issues.filter((i) => i.type === "linter");
-	if (linterIssues.length > 0) {
-		console.log(
-			`  ${chalk.blue(SYMBOLS.info)} Linter issues:   ${chalk.blue(linterIssues.length)}`,
-		);
-	} else {
-		console.log(
-			`  ${chalk.green(SYMBOLS.check)} Linter issues:   ${chalk.green("none")}`,
-		);
-	}
+	const issues = (type: string) => result.issues.filter(i => i.type === type).length;
+	printIssueStatus("High complexity", issues("high-complexity"), "warn");
+	printIssueStatus("Duplication", issues("duplication"), "warn");
+	printIssueStatus("Circular deps", issues("circular-dependency"), "error");
+	printIssueStatus("Arch violations", issues("architecture-violation"), "error");
+	
+	const vulnLen = result.issues.filter(i => i.type === "vulnerability" || i.type === "dependency-vulnerability").length;
+	printIssueStatus("Vulnerabilities", vulnLen, "error");
+	printIssueStatus("Linter issues", issues("linter"), "info");
 
 	console.log(`\n${chalk.cyan(SYMBOLS.line.repeat(52))}\n`);
 }

@@ -13,7 +13,7 @@ export function createEmptyCache(): AnalysisCache {
 	};
 }
 
-export function loadConfig(dir: string, options: { strict?: boolean }): ProjectConfig {
+export function loadConfig(dir: string, options: { strict?: boolean; precision?: boolean | "auto" }): ProjectConfig {
 	let config: ProjectConfig = {
 		maxComplexity: options.strict ? 10 : 20,
 		godFileLines: 500,
@@ -21,6 +21,8 @@ export function loadConfig(dir: string, options: { strict?: boolean }): ProjectC
 		criticalNodeThreshold: 10,
 		duplicationThreshold: 15,
 		exclude: [],
+		rootDir: dir,
+		precision: options.precision ?? "auto",
 	};
 
 	const configPath = path.join(dir, ".codepulse.json");
@@ -71,5 +73,6 @@ function createMinimalContext(
 		graph: new Map(),
 		edges: [],
 		config,
+		circularDependencies: [],
 	};
 }

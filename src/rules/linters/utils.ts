@@ -1,4 +1,5 @@
 import { exec as execCallback, execSync } from "node:child_process";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
 import type { AnalysisContext, Issue } from "../../types/analysis";
@@ -57,11 +58,31 @@ export function hasAnyFile(context: AnalysisContext, extensions: string[]): bool
 	);
 }
 
+function getLocalBinPaths(startDir: string): string[] {
+	const paths: string[] = [];
+	let current = startDir;
+	while (current !== path.dirname(current)) {
+		const localPath = path.join(current, "node_modules", ".bin");
+		if (fs.existsSync(localPath)) {
+			paths.push(localPath);
+		}
+		current = path.dirname(current);
+	}
+	return paths;
+}
+
 export function runCommandSync(command: string, cwd: string): CommandResult {
+	const env = { ...process.env };
+	const localBins = getLocalBinPaths(cwd);
+	if (localBins.length > 0) {
+		env.PATH = `${localBins.join(path.delimiter)}${path.delimiter}${env.PATH || ""}`;
+	}
+
 	try {
 		return {
 			output: execSync(command, {
 				cwd,
+				env,
 				encoding: "utf-8",
 				stdio: ["ignore", "pipe", "pipe"],
 				maxBuffer: LINTER_MAX_BUFFER,
@@ -80,9 +101,16 @@ export async function runCommandAsync(
 	command: string,
 	cwd: string,
 ): Promise<CommandResult> {
+	const env = { ...process.env };
+	const localBins = getLocalBinPaths(cwd);
+	if (localBins.length > 0) {
+		env.PATH = `${localBins.join(path.delimiter)}${path.delimiter}${env.PATH || ""}`;
+	}
+
 	try {
 		const { stdout } = await execAsync(command, {
 			cwd,
+			env,
 			maxBuffer: LINTER_MAX_BUFFER,
 			encoding: "utf-8",
 		});
@@ -160,6 +188,24 @@ function normalizeFailureReason(
 		return `exited with code ${status}`;
 	}
 	return text.trim() || "unknown failure";
+}
+
+export function resolveBinaryPath(cmd: string, startDir: string): string {
+	let current = startDir;
+	while (current !== path.dirname(current)) {
+		const localPath = path.join(current, "node_modules", ".bin", cmd);
+		if (fs.existsSync(localPath)) {
+			return localPath;
+		}
+		current = path.dirname(current);
+	}
+
+	try {
+		execSync(`${cmd} --version`, { stdio: "ignore" });
+		return cmd;
+	} catch {
+		return cmd;
+	}
 }
 
 export interface LinterConfig {

@@ -3,6 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { getConfigPaths } from "./mcp-paths";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function readJsonConfig(configPath: string): any {
 	if (!fs.existsSync(configPath)) return {};
 	try {
@@ -13,10 +14,8 @@ function readJsonConfig(configPath: string): any {
 	}
 }
 
-function updateGitHubCopilotConfig(
-	configPath: string,
-	mcpConfig: any,
-): boolean {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function updateGitHubCopilotConfig(configPath: string, mcpConfig: any): boolean {
 	const config = readJsonConfig(configPath);
 	if (!config.mcpServers) {
 		config.mcpServers = {};
@@ -29,6 +28,7 @@ function updateGitHubCopilotConfig(
 	return true;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function updateClaudeCodeConfig(configPath: string, mcpConfig: any): boolean {
 	const config = readJsonConfig(configPath);
 
@@ -52,6 +52,7 @@ function updateClaudeCodeConfig(configPath: string, mcpConfig: any): boolean {
 	return updateStandardConfig(configPath, mcpConfig);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function updateZedConfig(configPath: string, mcpConfig: any): boolean {
 	const config = readJsonConfig(configPath);
 	if (!config.context_servers) {
@@ -65,6 +66,7 @@ function updateZedConfig(configPath: string, mcpConfig: any): boolean {
 	return true;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function updateStandardConfig(configPath: string, mcpConfig: any): boolean {
 	const config = readJsonConfig(configPath);
 	const pathLower = configPath.toLowerCase();
@@ -88,6 +90,7 @@ function updateStandardConfig(configPath: string, mcpConfig: any): boolean {
 	return true;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getConfigKeyAndContext(config: any, pathLower: string) {
 	const isKiloCLI =
 		pathLower.includes("kilo") && !pathLower.includes("kilocode");
@@ -100,69 +103,52 @@ function getConfigKeyAndContext(config: any, pathLower: string) {
 	return { key, isKiloCLI, isOpenCode };
 }
 
-function buildServerConfig(
-	mcpConfig: any,
-	pathLower: string,
-	isKiloCLI: boolean,
-	isOpenCode: boolean,
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildServerConfig(mcpConfig: any, pathLower: string, isKiloCLI: boolean, isOpenCode: boolean) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const serverConfig: any = { ...mcpConfig };
 
 	if (pathLower.includes(".gemini")) {
 		serverConfig.trust = true;
 	}
 
-	const needsArrayCommand =
-		isKiloCLI ||
-		isOpenCode ||
-		pathLower.includes("openclaude") ||
-		pathLower.includes("claude.json");
-
-	if (needsArrayCommand) {
+	if (isKiloCLI || isOpenCode) {
 		serverConfig.command = [mcpConfig.command, ...mcpConfig.args];
 		delete serverConfig.args;
-
-		if (isKiloCLI || isOpenCode) {
-			serverConfig.type = "local";
-			serverConfig.enabled = true;
-		}
 	}
+
 	return serverConfig;
 }
 
-export function setupMcpConfigs() {
+export function setupMcpConfigs(): number {
 	const home = os.homedir();
-	const platform = os.platform();
-	const isWin = platform === "win32";
-	const isMac = platform === "darwin";
-	const appData =
-		process.env.APPDATA || (isWin ? path.join(home, "AppData", "Roaming") : "");
-
-	const configs = getConfigPaths(home, isWin, isMac, appData);
+	const isWin = process.platform === "win32";
+	const isMac = process.platform === "darwin";
+	const appData = process.env.APPDATA || (isWin ? path.join(home, "AppData", "Roaming") : "");
+	
 	const mcpConfig = {
-		command: isWin ? "codepulse.cmd" : "codepulse",
-		args: ["mcp"],
+		command: "node",
+		args: [path.join(__dirname, "index.js"), "mcp"],
 	};
 
-	let configuredCount = 0;
+	const paths = getConfigPaths(home, isWin, isMac, appData);
+	let count = 0;
 
-	for (const configPath of configs) {
+	for (const configPath of paths) {
 		if (shouldUpdateConfig(configPath, home)) {
-			try {
-				if (updateConfigByPath(configPath, mcpConfig)) {
-					configuredCount++;
-				}
-			} catch {
-				// Silently ignore
+			if (updateConfigByPath(configPath, mcpConfig)) {
+				count++;
 			}
 		}
 	}
 
-	if (configuredCount > 0) {
-		markMcpSetupDone(home);
+	const markerPath = path.join(home, ".codepulse", "mcp-setup-done");
+	const dir = path.dirname(markerPath);
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir, { recursive: true });
 	}
-
-	return configuredCount;
+	fs.writeFileSync(markerPath, new Date().toISOString(), "utf8");
+	return count;
 }
 
 function shouldUpdateConfig(configPath: string, home: string): boolean {
@@ -170,29 +156,22 @@ function shouldUpdateConfig(configPath: string, home: string): boolean {
 	return fs.existsSync(dir) || configPath === path.join(home, ".claude.json");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function updateConfigByPath(configPath: string, mcpConfig: any): boolean {
-	if (configPath.includes("github-copilot")) {
-		return updateGitHubCopilotConfig(configPath, mcpConfig);
+	try {
+		if (configPath.includes("github-copilot")) {
+			return updateGitHubCopilotConfig(configPath, mcpConfig);
+		}
+		if (configPath.toLowerCase().includes("zed")) {
+			return updateZedConfig(configPath, mcpConfig);
+		}
+		if (configPath.includes(".claude.json")) {
+			return updateClaudeCodeConfig(configPath, mcpConfig);
+		}
+		return updateStandardConfig(configPath, mcpConfig);
+	} catch {
+		return false;
 	}
-	if (configPath.toLowerCase().includes("zed")) {
-		return updateZedConfig(configPath, mcpConfig);
-	}
-	if (configPath.endsWith(".claude.json")) {
-		return updateClaudeCodeConfig(configPath, mcpConfig);
-	}
-	return updateStandardConfig(configPath, mcpConfig);
-}
-
-function markMcpSetupDone(home: string) {
-	const codepulseDir = path.join(home, ".codepulse");
-	if (!fs.existsSync(codepulseDir)) {
-		fs.mkdirSync(codepulseDir, { recursive: true });
-	}
-	fs.writeFileSync(
-		path.join(codepulseDir, "mcp-setup-done"),
-		new Date().toISOString(),
-		"utf8",
-	);
 }
 
 export function markDepsAsInstalled() {

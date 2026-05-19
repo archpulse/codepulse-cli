@@ -123,61 +123,54 @@ async function runSCAChecks(rootDir: string): Promise<Issue[]> {
 	return issues;
 }
 
-async function runVulnerabilityChecks(
-	context: AnalysisContext,
-): Promise<Issue[]> {
-	const issues: Issue[] = [];
-	const files = context.files.filter((file) => !shouldSkipFile(file.relativePath));
+function checkLineForVulnerabilities(line: string, lineIndex: number, relativePath: string, isRust: boolean, issues: Issue[]) {
+	if (line.startsWith("//") || line.startsWith("*") || line.startsWith("/*")) return;
 
-	await runConcurrent(files, SECURITY_MAX_CONCURRENCY, async (file) => {
-		try {
-			const content = await fs.promises.readFile(file.path, "utf-8");
+	if (isRust && /\bunsafe\s*\{/.test(line)) {
+		issues.push({
+			type: "vulnerability",
+			severity: "warning",
+			file: relativePath,
+			line: lineIndex + 1,
+			message: "Unsafe block detected.",
+			suggestion: "Ensure this block is properly audited and necessary.",
+		});
+	}
 
-			if (/\.(ts|tsx|js|jsx)$/i.test(file.path)) {
-				checkAST(content, file.relativePath, issues);
-			}
-
-			const isRust = /\.rs$/i.test(file.path);
-			const lines = content.split(/\r?\n/);
-			for (let i = 0; i < lines.length; i++) {
-				const line = lines[i].trim();
-				if (
-					line.startsWith("//") ||
-					line.startsWith("*") ||
-					line.startsWith("/*")
-				) {
-					continue;
-				}
-
-				if (isRust && /\bunsafe\s*\{/.test(line)) {
-					issues.push({
-						type: "vulnerability",
-						severity: "warning",
-						file: file.relativePath,
-						line: i + 1,
-						message: "Unsafe block detected.",
-						suggestion: "Ensure this block is properly audited and necessary.",
-					});
-				}
-
-				for (const pattern of REGEX_PATTERNS) {
-					if (pattern.regex.test(line)) {
-						issues.push({
-							type: "vulnerability",
-							severity: "error",
-							file: file.relativePath,
-							line: i + 1,
-							message: pattern.message,
-							suggestion: pattern.suggestion,
-						});
-					}
-				}
-			}
-		} catch {
-			// Ignore unreadable files and move on.
+	for (const pattern of REGEX_PATTERNS) {
+		if (pattern.regex.test(line)) {
+			issues.push({
+				type: "vulnerability",
+				severity: "error",
+				file: relativePath,
+				line: lineIndex + 1,
+				message: pattern.message,
+				suggestion: pattern.suggestion,
+			});
 		}
-	});
+	}
+}
 
+async function scanFileForSecurity(file: any, issues: Issue[]) {
+	try {
+		const content = await fs.promises.readFile(file.path, "utf-8");
+
+		if (/\.(ts|tsx|js|jsx)$/i.test(file.path)) {
+			checkAST(content, file.relativePath, issues);
+		}
+
+		const isRust = /\.rs$/i.test(file.path);
+		const lines = content.split(/\r?\n/);
+		lines.forEach((line, i) => checkLineForVulnerabilities(line.trim(), i, file.relativePath, isRust, issues));
+	} catch {
+		// Ignore unreadable files.
+	}
+}
+
+async function runVulnerabilityChecks(context: AnalysisContext): Promise<Issue[]> {
+	const issues: Issue[] = [];
+	const files = context.files.filter((f) => !shouldSkipFile(f.relativePath));
+	await runConcurrent(files, SECURITY_MAX_CONCURRENCY, (file) => scanFileForSecurity(file, issues));
 	return issues;
 }
 

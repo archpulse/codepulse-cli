@@ -210,6 +210,47 @@ function severityColor(severity: IssueSeverity): (s: string) => string {
 	return chalk.blue;
 }
 
+function resolvePrecisionAndEngineLabel(opts: any): { precision: boolean | "auto", engineLabel: string } {
+	if (opts.precision || opts.eslint || opts.engine === "eslint") {
+		return {
+			precision: true,
+			engineLabel: chalk.magenta("ESLint (Extended Analysis)")
+		};
+	}
+	if (opts.engine === "oxlint") {
+		return {
+			precision: false,
+			engineLabel: chalk.yellow("Oxlint (Fast Mode)")
+		};
+	}
+	return {
+		precision: "auto",
+		engineLabel: chalk.cyan("Auto (Resolving...)")
+	};
+}
+
+async function performScan(absDir: string, precision: boolean | "auto", opts: any, spinner: any) {
+	const result = await analyze(absDir, {
+		strict: opts.strict,
+		precision: precision,
+	});
+
+	if (precision === "auto") {
+		const resolvedEngine = (result as any).resolvedPrecision ? "ESLint (Auto-detected config)" : "Oxlint (Fast Mode)";
+		spinner.info(`${chalk.bold("Engine resolved to:")} ${chalk.cyan(resolvedEngine)}`);
+		spinner.start("Generating report...");
+	}
+
+	spinner.text = "Generating report...";
+	const outputs = await generateScanOutputs(result, absDir, opts);
+	
+	spinner.succeed(chalk.green("Analysis complete!"));
+	
+	printScanSummary(result, absDir, outputs.reportPath, outputs.badgePath, outputs.score, opts);
+	
+	return { result, outputs };
+}
+
 export async function runScan(dir: string | undefined, opts: any) {
 	const absDir = path.resolve(dir || ".");
 
@@ -223,25 +264,18 @@ export async function runScan(dir: string | undefined, opts: any) {
 		return;
 	}
 
-	console.log(`\n${chalk.bold.cyan("  ◆ CodePulse CLI")}`);
+	console.log(`\n${chalk.bold.cyan("  ◆ CodePulse v5 — Engineering Honesty")}`);
 	console.log(chalk.gray(`  Scanning ${absDir}\n`));
 
 	await runInstallDepsForProject(absDir);
 
+	const { precision, engineLabel } = resolvePrecisionAndEngineLabel(opts);
+	console.log(`  ${chalk.bold("Engine:")} ${engineLabel}`);
+
 	const spinner = ora({ text: "Scanning files...", color: "cyan" }).start();
 
 	try {
-		const result = await analyze(absDir, { strict: opts.strict });
-		spinner.text = "Generating report...";
-		const { reportPath, badgePath } = await generateScanOutputs(
-			result,
-			absDir,
-			opts,
-		);
-
-		spinner.succeed(chalk.green("Analysis complete!"));
-
-		printScanSummary(result, absDir, reportPath, badgePath, opts);
+		const { result, outputs } = await performScan(absDir, precision, opts, spinner);
 
 		if (opts.ld) {
 			printLinterDebug(result.issues, console.log, opts);
@@ -257,7 +291,7 @@ export async function runScan(dir: string | undefined, opts: any) {
 			else printIssues(issues);
 		}
 
-		if (opts.open) openReport(reportPath);
+		if (opts.open) openReport(outputs.reportPath);
 
 		exitWithCode(filterIssues(result.issues, opts, getScanIssueMode(opts)), opts);
 	} catch (err) {
@@ -325,15 +359,20 @@ function printScanSummary(
 	absDir: string,
 	reportPath: string,
 	badgePath: string,
+	score: number,
 	opts: any,
 ) {
 	const mode = getScanIssueMode(opts);
 	const issues = filterIssues(result.issues, opts, mode);
 
+	const scoreColor = score > 90 ? chalk.green : score > 70 ? chalk.yellow : chalk.red;
+
 	console.log(
 		`\n  ${chalk.bold("Report:")} ${chalk.cyan(path.join(reportPath, "index.html"))}`,
 	);
 	console.log(`  ${chalk.bold("Badge:")}  ${chalk.cyan(badgePath)}`);
+	console.log(`  ${chalk.bold("Score:")}  ${scoreColor(score)}/100`);
+
 	printStats({ ...result, issues }, absDir);
 
 	const errors = issues.filter((i) => i.severity === "error").length;
